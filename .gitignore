@@ -1,0 +1,21 @@
+# Phụ thuộc và bản build
+node_modules/
+dist/
+.next/
+out/
+coverage/
+
+# Biến môi trường – chỉ commit .env.example
+.env
+.env.*
+!.env.example
+
+# Kết quả kiểm thử
+test-results/
+playwright-report/
+
+# Nền tảng triển khai, hệ điều hành, editor
+.vercel/
+.DS_Store
+Thumbs.db
+*.log

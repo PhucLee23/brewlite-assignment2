@@ -1,0 +1,77 @@
+@startuml activity-02-xu-ly-don
+' Activity-02: nhân viên quầy xử lý đơn đã thanh toán, khách theo dõi trạng thái (Task 2.1)
+' Liên kết: UC-08, UC-09, UC-10; FR-15, FR-16, FR-17, FR-18, FR-19
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam activity {
+  BackgroundColor #FFF8EE
+  BorderColor #5A3A22
+  DiamondBackgroundColor #F3D9B1
+}
+skinparam swimlaneWidth same
+
+|Nhân viên quầy|
+start
+:Đăng nhập tài khoản vai trò STAFF;
+
+|Web (Next.js)|
+if (Vai trò là STAFF?) then (không)
+  :Chặn vào màn hình quầy,
+  báo không có quyền;
+  stop
+else (có)
+endif
+:Hiển thị đơn PAID, PREPARING, READY
+(cũ nhất trước, tự làm mới mỗi 15 giây);
+
+|Nhân viên quầy|
+repeat
+  :Chọn đơn, bấm nút trạng thái kế tiếp
+  (Bắt đầu pha / Sẵn sàng / Hoàn tất);
+  |Web (Next.js)|
+  :PATCH /orders/:id/status kèm JWT;
+  |API (NestJS)|
+  :Kiểm tra JWT và vai trò STAFF,
+  validate trạng thái đích;
+  :Khóa dòng đơn, kiểm tra state machine,
+  cập nhật có điều kiện WHERE status = cũ;
+  if (Chuyển tiếp hợp lệ?) then (không)
+    :Trả 409 (đơn vừa bị hủy
+    hoặc đã được người khác cập nhật);
+    |Web (Next.js)|
+    :Báo lỗi, tải lại danh sách;
+  else (có)
+    |API (NestJS)|
+    :Lưu trạng thái mới;
+    |Web (Next.js)|
+    :Cập nhật thẻ đơn trên danh sách;
+    |Khách hàng|
+    :Màn hình đơn hàng hiển thị
+    trạng thái mới (PREPARING / READY);
+  endif
+  |Nhân viên quầy|
+repeat while (Đơn đã COMPLETED?) is (chưa)
+-> rồi;
+:Giao nước cho khách;
+stop
+
+|Khách hàng|
+start
+:Mở đơn PAID chưa pha, bấm Hủy đơn;
+|API (NestJS)|
+:Khóa dòng đơn, kiểm tra không có
+thanh toán đang xử lý;
+if (Đơn còn PAID?) then (có)
+  :CANCELLED, trả hàng về kho,
+  thu hồi điểm (LoyaltyTransaction REVOKE);
+  |Web (Next.js)|
+  :Hiển thị đơn đã hủy;
+else (đã PREPARING trở đi)
+  |API (NestJS)|
+  :Trả 409 – không hủy được
+  khi quán đã bắt đầu pha;
+  |Web (Next.js)|
+  :Báo lỗi cho khách;
+endif
+stop
+@enduml

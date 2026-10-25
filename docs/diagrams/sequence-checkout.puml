@@ -1,0 +1,147 @@
+@startuml sequence-checkout
+' Sequence-01: UC-06 Đặt và thanh toán đơn hàng (Task 2.2)
+' Liên kết: FR-07, FR-08, FR-10, FR-11, FR-12, FR-13, FR-14; NFR-04, NFR-06; ADR-006, ADR-007
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam sequenceMessageAlign left
+skinparam responseMessageBelowArrow true
+skinparam ParticipantBackgroundColor #FFF8EE
+skinparam ParticipantBorderColor #5A3A22
+skinparam ActorBorderColor #5A3A22
+skinparam SequenceGroupBackgroundColor #F3D9B1
+autonumber "<b>0."
+
+actor "Customer" as C
+participant "Next.js UI" as UI
+participant "NestJS API" as API
+database "Database\n(PostgreSQL)" as DB
+participant "Payment Service\n(BrewPay – bên thứ ba)" as PS
+
+C -> UI : Bấm "Xác nhận trả"\n(phương thức WALLET/CARD)
+activate UI
+UI -> UI : orderKey = khóa của giỏ hàng hiện tại\n(giữ nguyên nếu giỏ không đổi)
+
+== Tạo đơn hàng ==
+UI -> API : POST /orders\nAuthorization: Bearer <JWT>\nIdempotency-Key: orderKey\n{ items[], promoCode? }
+activate API
+API -> API : JwtAuthGuard kiểm tra chữ ký và hạn JWT
+alt JWT thiếu / sai / hết hạn
+  API --> UI : 401 Unauthorized
+  UI --> C : Đăng xuất, chuyển tới trang Đăng nhập
+else JWT hợp lệ
+  API -> API : ValidationPipe kiểm tra DTO\n(qty 1–20, size S/M/L, ≤ 5 topping)
+  opt Dữ liệu không hợp lệ
+    API --> UI : 400 + thông báo tiếng Việt
+  end
+  API -> DB : SELECT Order WHERE idempotencyKey = "userId:orderKey"
+  DB --> API : (không có)
+  API -> DB : SELECT Product, Topping, Promotion
+  DB --> API : giá gốc, giá topping, mã giảm giá
+  API -> API : Tính giá phía server (BR-01, BR-04)
+  group Transaction (READ COMMITTED)
+    loop từng món theo productId tăng dần
+      API -> DB : SELECT stock, version FROM Product WHERE id = ?
+      DB --> API : stock, version
+      API -> DB : UPDATE Product SET stock = stock - qty, version = version + 1\nWHERE id = ? AND version = ?
+      DB --> API : số dòng cập nhật (1 = thành công, 0 = xung đột → đọc lại, thử lại)
+    end
+    API -> DB : INSERT Order (PENDING) + OrderItem[]
+    DB --> API : order
+  end
+  alt Không đủ tồn kho
+    API --> UI : 409 "‹món› chỉ còn N phần" (transaction rollback)
+    UI --> C : Báo lỗi, giữ nguyên giỏ hàng
+  else Tạo đơn thành công
+    API --> UI : 201 Order { id, status: PENDING, total }
+  end
+end
+deactivate API
+
+== Mở phiên thanh toán ==
+UI -> UI : payKey = khóa mới cho lần thanh toán này
+UI -> API : POST /payments\nAuthorization: Bearer <JWT>\nIdempotency-Key: payKey\n{ orderId, method }
+activate API
+API -> API : JwtAuthGuard + ValidationPipe
+API -> DB : SELECT Payment WHERE idempotencyKey = payKey
+DB --> API : (không có)
+group Transaction: giữ chỗ khóa thanh toán
+  API -> DB : SELECT id FROM "Order" WHERE id = ? FOR UPDATE
+  API -> DB : Kiểm tra đơn thuộc khách, ở PENDING / PAYMENT_FAILED,\nchưa có phiên PROCESSING còn hạn
+  API -> DB : INSERT Payment (PROCESSING, amount = order.total,\nidempotencyKey UNIQUE)
+  DB --> API : payment
+end
+API -> API : Ký link: HMAC-SHA256(GATEWAY_SECRET,\npaymentId|orderId|amount|method|expiresAt)
+API --> UI : 201 { paymentId, paymentUrl, expiresAt, replayed: false }\n(đơn vẫn PENDING)
+deactivate API
+UI --> C : Trang /payments/:id: mã QR chứa paymentUrl\n+ nút "Mở BrewPay"
+
+== Thanh toán tại BrewPay ==
+par Khách thanh toán ở BrewPay
+  C -> PS : Quét mã QR hoặc bấm "Mở BrewPay"
+  activate PS
+  PS -> PS : Kiểm tra chữ ký link và hạn phiên
+  PS --> C : Trang BrewPay: số tiền, phương thức,\nnút "Thanh toán" / "Từ chối"
+  C -> PS : Bấm "Thanh toán" (hoặc "Từ chối")
+  PS --> C : Trang kết quả của BrewPay
+  PS -> API : POST /payments/webhook\nX-BrewPay-Signature: HMAC-SHA256(GATEWAY_SECRET,\npaymentId|status|amount|gatewayRef)\n{ paymentId, status, amount, gatewayRef }
+  activate API
+  API -> API : Kiểm tra chữ ký (so sánh thời gian hằng)
+  alt Sai chữ ký
+    API --> PS : 401 (không đổi trạng thái)
+  else Số tiền khác Payment.amount
+    API --> PS : 400 (không đổi trạng thái)
+  else Hợp lệ
+    API -> DB : SELECT Payment WHERE id = paymentId
+    DB --> API : payment
+    alt Payment không còn PROCESSING (webhook gửi lặp)
+      API --> PS : 200 { ignored: true }
+    else status = SUCCESS
+      group Transaction: ghi kết quả
+        API -> DB : UPDATE Payment SET status = SUCCESS, gatewayRef, confirmedAt\nWHERE id = ? AND status = PROCESSING
+        API -> DB : UPDATE Order SET status = PAID WHERE id = ? AND status = PENDING
+        API -> DB : INSERT LoyaltyTransaction (EARN, +total/1000 điểm)\nUPDATE User SET loyaltyPoints += điểm
+      end
+      API --> PS : 200
+    else status = FAILED
+      group Transaction: ghi kết quả
+        API -> DB : UPDATE Payment SET status = FAILED, gatewayRef, confirmedAt\nWHERE id = ? AND status = PROCESSING
+        API -> DB : UPDATE Order SET status = PAYMENT_FAILED WHERE id = ? AND status = PENDING
+      end
+      API --> PS : 200
+    end
+  end
+  deactivate API
+  opt Không nhận được 2xx (mạng lỗi, API đang khởi động)
+    PS -> API : Gửi lại webhook, tối đa 5 lần, giãn cách tăng dần
+  end
+  deactivate PS
+else Web hỏi kết quả
+  loop mỗi 1,5 giây cho tới khi Payment hết PROCESSING
+    UI -> API : GET /payments/:id (JWT)
+    API -> DB : SELECT Payment + Order
+    DB --> API : payment
+    API --> UI : { status, order }
+  end
+end
+
+alt Payment SUCCESS, đơn PAID
+  UI -> UI : Xóa giỏ hàng, cập nhật điểm trên header
+  UI --> C : Màn hình xác nhận: mã đơn, PAID,\nđiểm vừa cộng, nhắc tới quầy
+else Payment FAILED, đơn PAYMENT_FAILED
+  UI --> C : Báo lỗi kèm mã đơn, giữ nguyên giỏ hàng,\ncho thanh toán lại (khóa thanh toán mới)
+end
+
+== Client gửi lại yêu cầu mở phiên (mạng chậm, hết thời gian chờ) ==
+UI -> API : POST /payments\nIdempotency-Key: payKey (cùng khóa cũ)
+activate API
+API -> DB : SELECT Payment WHERE idempotencyKey = payKey
+DB --> API : payment đã có với khóa này
+alt Khóa đã dùng cho đơn khác / của người khác
+  API --> UI : 409 Conflict
+else Đã có phiên với khóa này
+  API --> UI : 201 { cùng paymentId, paymentUrl, replayed: true }\nkhông tạo phiên mới, không cộng điểm lần hai
+end
+deactivate API
+UI --> C : Hiện lại đúng mã QR / kết quả của phiên cũ
+deactivate UI
+@enduml

@@ -1,0 +1,32 @@
+@startuml activity-03-tu-huy-don
+' Activity-03: tự hủy đơn chưa thanh toán quá 15 phút và trả hàng về kho (Task 2.1)
+' Liên kết: UC-11; FR-20; quy tắc BR-08
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam activity {
+  BackgroundColor #FFF8EE
+  BorderColor #5A3A22
+  DiamondBackgroundColor #F3D9B1
+}
+
+|Bộ hẹn giờ / API|
+start
+if (Nguồn kích hoạt?) then (định kỳ mỗi phút)
+else (có yêu cầu POST /orders mới)
+endif
+:Tìm tối đa 20 đơn PENDING hoặc PAYMENT_FAILED
+có updatedAt cũ hơn 15 phút (id tăng dần);
+while (Còn đơn trong danh sách?) is (còn)
+  :Khóa dòng đơn (SELECT … FOR UPDATE);
+  if (Có thanh toán PROCESSING\nhoặc trạng thái đã đổi?) then (có)
+    :Bỏ qua đơn này,
+    lần kiểm tra sau xử lý tiếp;
+  else (không)
+    :Chuyển đơn sang CANCELLED
+    qua state machine;
+    :Cộng lại tồn kho từng món
+    theo productId tăng dần, tăng version;
+  endif
+endwhile (hết)
+stop
+@enduml

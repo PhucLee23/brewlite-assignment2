@@ -1,0 +1,164 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36">
+  <diagram name="Page-1" id="HrDTBXzaGzi5W4mMtRpQ">
+    <mxGraphModel dx="862" dy="774" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-7" parent="1" style="ellipse;html=1;shape=startState;fillColor=#000000;strokeColor=#ff0000;" value="" vertex="1">
+          <mxGeometry height="30" width="30" x="450" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-8" edge="1" parent="1" source="6e7K-d9d-85lBjCE7rHw-7" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="465" y="70" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-16" edge="1" parent="1" source="6e7K-d9d-85lBjCE7rHw-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="110" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-13" parent="1" style="strokeWidth=2;html=1;shape=mxgraph.flowchart.decision;whiteSpace=wrap;fontSize=14;" value="Nguồn kích hoạt?" vertex="1">
+          <mxGeometry height="40" width="180" x="375" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-17" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" target="6e7K-d9d-85lBjCE7rHw-20" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points">
+              <mxPoint x="350" y="130" />
+            </Array>
+            <mxPoint x="350" y="110" as="sourcePoint" />
+            <mxPoint x="440" y="130" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-18" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="580" y="90" />
+              <mxPoint x="580" y="110" />
+            </Array>
+            <mxPoint x="555" y="90" as="sourcePoint" />
+            <mxPoint x="580" y="110" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-19" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" target="6e7K-d9d-85lBjCE7rHw-20" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points">
+              <mxPoint x="580" y="130" />
+            </Array>
+            <mxPoint x="580" y="110" as="sourcePoint" />
+            <mxPoint x="500" y="130" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-21" edge="1" parent="1" source="6e7K-d9d-85lBjCE7rHw-20" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="465" y="160" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-20" parent="1" style="strokeWidth=2;html=1;shape=mxgraph.flowchart.decision;whiteSpace=wrap;" value="" vertex="1">
+          <mxGeometry height="20" width="20" x="455" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-22" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=14;" value="có yêu cầu POST/orders mới" vertex="1">
+          <mxGeometry height="30" width="190" x="550" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-23" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=14;" value="định kì mỗi phút&amp;nbsp;" vertex="1">
+          <mxGeometry height="30" width="115" x="260" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-27" edge="1" parent="1" source="6e7K-d9d-85lBjCE7rHw-26" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="465" y="240" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-26" parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fontColor=default;" value="&lt;span style=&quot;font-family: -apple-system-body, ui-sans-serif, -apple-system, system-ui, &amp;quot;Segoe UI&amp;quot;, Helvetica, &amp;quot;Apple Color Emoji&amp;quot;, Arial, sans-serif, &amp;quot;Segoe UI Emoji&amp;quot;, &amp;quot;Segoe UI Symbol&amp;quot;; text-align: start; white-space: pre-line;&quot;&gt;&lt;font style=&quot;font-size: 14px;&quot;&gt;Tìm tối đa 20 đơn PENDING hoặc PAYMENT_FAILED có updatedAt cũ hơn 15 phút (id tăng dần)&amp;nbsp;&lt;/font&gt;&lt;/span&gt;" vertex="1">
+          <mxGeometry height="60" width="347.5" x="291.25" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-29" edge="1" parent="1" source="6e7K-d9d-85lBjCE7rHw-28" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="6e7K-d9d-85lBjCE7rHw-33">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="200" y="300" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-35" edge="1" parent="1" source="6e7K-d9d-85lBjCE7rHw-28" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="465" y="320" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-28" parent="1" style="strokeWidth=2;html=1;shape=mxgraph.flowchart.decision;whiteSpace=wrap;fontSize=14;fontColor=default;labelBorderColor=none;textShadow=0;labelBackgroundColor=none;" value="&lt;span style=&quot;font-family: -apple-system-body, ui-sans-serif, -apple-system, system-ui, &amp;quot;Segoe UI&amp;quot;, Helvetica, &amp;quot;Apple Color Emoji&amp;quot;, Arial, sans-serif, &amp;quot;Segoe UI Emoji&amp;quot;, &amp;quot;Segoe UI Symbol&amp;quot;; font-size: 16px; text-align: start; white-space: pre-line;&quot;&gt;Còn đơn trong danh sách?&lt;/span&gt;" vertex="1">
+          <mxGeometry height="50" width="270" x="330" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-33" parent="1" style="ellipse;html=1;shape=endState;fillColor=#000000;strokeColor=#ff0000;" value="" vertex="1">
+          <mxGeometry height="20" width="20" x="190" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-34" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=14;" value="hết" vertex="1">
+          <mxGeometry height="30" width="60" x="280" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-36" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=14;" value="còn" vertex="1">
+          <mxGeometry height="30" width="60" x="450" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-39" edge="1" parent="1" source="6e7K-d9d-85lBjCE7rHw-37" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="465" y="390" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-37" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=14;labelBackgroundColor=none;fontColor=default;" value="&lt;span style=&quot;font-family: -apple-system-body, ui-sans-serif, -apple-system, system-ui, &amp;quot;Segoe UI&amp;quot;, Helvetica, &amp;quot;Apple Color Emoji&amp;quot;, Arial, sans-serif, &amp;quot;Segoe UI Emoji&amp;quot;, &amp;quot;Segoe UI Symbol&amp;quot;; text-align: start; white-space: pre-line;&quot;&gt;Khóa dòng đơn (SELECT ... FOR UPDATE)&lt;/span&gt;" vertex="1">
+          <mxGeometry height="40" width="286.25" x="321.88" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-43" edge="1" parent="1" source="6e7K-d9d-85lBjCE7rHw-40" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="290" y="470" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-44" edge="1" parent="1" source="6e7K-d9d-85lBjCE7rHw-40" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="630" y="470" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-40" parent="1" style="strokeWidth=2;shape=mxgraph.flowchart.decision;fontSize=14;fontColor=default;labelBorderColor=none;textShadow=0;labelBackgroundColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;html=1;convertToSvg=0;svgWhiteSpace=wrap;autosizeText=0;" value="Có thanh toán PROCESSING&lt;div&gt;&amp;nbsp;hoặc trạng thái đã đổi?&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="278.12" x="325.95" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-45" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=14;" value="có&amp;nbsp;" vertex="1">
+          <mxGeometry height="30" width="60" x="280" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-46" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=14;" value="không&amp;nbsp;" vertex="1">
+          <mxGeometry height="30" width="60" x="590" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-53" edge="1" parent="1" source="6e7K-d9d-85lBjCE7rHw-47" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" target="6e7K-d9d-85lBjCE7rHw-51">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="290" y="640" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-47" parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;labelBorderColor=none;textShadow=0;" value="&lt;span style=&quot;color: rgb(13, 13, 13); font-family: -apple-system-body, ui-sans-serif, -apple-system, system-ui, &amp;quot;Segoe UI&amp;quot;, Helvetica, &amp;quot;Apple Color Emoji&amp;quot;, Arial, sans-serif, &amp;quot;Segoe UI Emoji&amp;quot;, &amp;quot;Segoe UI Symbol&amp;quot;; font-size: 16px; text-align: start; white-space: pre-line;&quot;&gt;Bỏ qua đơn này, lần kiểm tra sau xử lý tiếp&lt;/span&gt;" vertex="1">
+          <mxGeometry height="50" width="180" x="200" y="470" as="geometry" />
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-50" edge="1" parent="1" source="6e7K-d9d-85lBjCE7rHw-48" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="6e7K-d9d-85lBjCE7rHw-49">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-48" parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;labelBorderColor=none;textShadow=0;" value="&lt;span style=&quot;color: rgb(13, 13, 13); font-family: -apple-system-body, ui-sans-serif, -apple-system, system-ui, &amp;quot;Segoe UI&amp;quot;, Helvetica, &amp;quot;Apple Color Emoji&amp;quot;, Arial, sans-serif, &amp;quot;Segoe UI Emoji&amp;quot;, &amp;quot;Segoe UI Symbol&amp;quot;; font-size: 16px; text-align: start; white-space: pre-line;&quot;&gt;Chuyển đơn sang CANCELLED qua state machine&lt;/span&gt;" vertex="1">
+          <mxGeometry height="50" width="240" x="510" y="470" as="geometry" />
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-52" edge="1" parent="1" source="6e7K-d9d-85lBjCE7rHw-49" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" target="6e7K-d9d-85lBjCE7rHw-51">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="630" y="640" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-49" parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;labelBorderColor=none;textShadow=0;" value="&lt;span style=&quot;color: rgb(13, 13, 13); font-family: -apple-system-body, ui-sans-serif, -apple-system, system-ui, &amp;quot;Segoe UI&amp;quot;, Helvetica, &amp;quot;Apple Color Emoji&amp;quot;, Arial, sans-serif, &amp;quot;Segoe UI Emoji&amp;quot;, &amp;quot;Segoe UI Symbol&amp;quot;; font-size: 16px; text-align: start; white-space: pre-line;&quot;&gt;Cộng lại tồn kho từng món theo productId tăng dần, tăng version&lt;/span&gt;" vertex="1">
+          <mxGeometry height="50" width="240" x="510" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-54" edge="1" parent="1" source="6e7K-d9d-85lBjCE7rHw-51" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="800" y="480" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-51" parent="1" style="strokeWidth=2;html=1;shape=mxgraph.flowchart.decision;whiteSpace=wrap;" value="" vertex="1">
+          <mxGeometry height="20" width="20" x="450.94" y="630" as="geometry" />
+        </mxCell>
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-55" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" target="6e7K-d9d-85lBjCE7rHw-28" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points">
+              <mxPoint x="800" y="265" />
+            </Array>
+            <mxPoint x="800" y="480" as="sourcePoint" />
+            <mxPoint x="620" y="270" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

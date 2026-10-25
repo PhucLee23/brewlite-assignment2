@@ -1,0 +1,132 @@
+@startuml activity-01-dat-hang
+' Activity-01: luồng end-to-end Xem menu → Giỏ hàng → Đặt đơn → Thanh toán → Xác nhận (Task 2.1)
+' Liên kết: UC-01, UC-02, UC-03, UC-05, UC-06; FR-01 – FR-14
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam activity {
+  BackgroundColor #FFF8EE
+  BorderColor #5A3A22
+  DiamondBackgroundColor #F3D9B1
+}
+skinparam swimlaneWidth same
+
+|Khách hàng|
+start
+:Mở BrewLite trên điện thoại;
+
+|Web (Next.js)|
+repeat
+  :Gọi GET /products;
+  |API (NestJS)|
+  :Đọc danh sách món từ CSDL;
+  |Web (Next.js)|
+repeat while (Tải menu lỗi?) is (lỗi: hiển thị\nthông báo và nút Thử lại)
+-> thành công;
+:Hiển thị lưới món kèm nhãn
+"Hết hàng" / "Còn N";
+
+|Khách hàng|
+repeat
+  :Chọn món, size, topping, số lượng;
+  |Web (Next.js)|
+  if (Số lượng chọn ≤ tồn kho\ntrừ số ly đã có trong giỏ?) then (còn đủ)
+    :Thêm vào giỏ (gộp dòng trùng),
+    cập nhật tổng tiền và badge;
+  else (hết hàng / vượt tồn kho)
+    :Khóa nút thêm,
+    báo "Chỉ còn N phần";
+  endif
+  |Khách hàng|
+repeat while (Chọn thêm món?) is (có)
+-> không;
+:Mở Giỏ hàng, bấm Thanh toán;
+
+|Web (Next.js)|
+if (Đã đăng nhập (có JWT)?) then (chưa)
+  :Chuyển tới trang Đăng nhập
+  kèm ?next=/checkout;
+  |Khách hàng|
+  :Nhập email, mật khẩu;
+  |API (NestJS)|
+  :Kiểm tra mật khẩu (bcrypt), cấp JWT;
+  |Web (Next.js)|
+  :Lưu phiên, quay lại trang Thanh toán;
+else (rồi)
+endif
+
+|Khách hàng|
+:Chọn Ví/Thẻ, nhập mã giảm giá (tùy chọn),
+bấm Xác nhận trả;
+
+|Web (Next.js)|
+:POST /orders kèm JWT
+và Idempotency-Key của giỏ;
+|API (NestJS)|
+:Kiểm tra JWT, validate dữ liệu,
+tính lại giá từ CSDL;
+:Transaction: trừ tồn kho theo productId tăng dần
+(optimistic locking), tạo đơn PENDING;
+if (Đủ tồn kho cho mọi món?) then (không)
+  :Hủy transaction, trả 409;
+  |Web (Next.js)|
+  :Báo "… chỉ còn N phần",
+  giữ nguyên giỏ hàng;
+  |Khách hàng|
+  :Sửa giỏ hàng;
+  stop
+else (đủ)
+endif
+
+repeat
+  |Web (Next.js)|
+  :POST /payments kèm Idempotency-Key mới;
+  |API (NestJS)|
+  :Khóa đơn, tạo Payment PROCESSING (hạn 15 phút),
+  ký link BrewPay, đơn vẫn PENDING;
+  |Web (Next.js)|
+  :Hiện mã QR chứa link BrewPay và nút "Mở BrewPay",
+  hỏi GET /payments/:id mỗi 1,5 giây;
+  |Khách hàng|
+  if (Mở BrewPay trước khi phiên hết hạn?) then (có)
+    :Quét mã QR (hoặc bấm nút),
+    bấm Thanh toán hoặc Từ chối;
+    |BrewPay (bên thứ ba)|
+    :Kiểm tra chữ ký link,
+    ghi nhận kết quả giao dịch;
+    :Gửi webhook có chữ ký HMAC
+    (gửi lại nếu API chưa nhận);
+    |API (NestJS)|
+    :Kiểm tra chữ ký và số tiền
+    (sai thì trả 401 / 400, bỏ qua webhook);
+  else (không – quá 15 phút)
+    |API (NestJS)|
+    :Đánh phiên FAILED;
+  endif
+  |API (NestJS)|
+  if (Kết quả thanh toán?) then (SUCCESS)
+    :Payment SUCCESS, đơn PAID,
+    cộng điểm (LoyaltyTransaction EARN);
+  else (FAILED)
+    :Payment FAILED, đơn PAYMENT_FAILED;
+    |Web (Next.js)|
+    :Báo lỗi kèm mã đơn,
+    giữ nguyên giỏ hàng;
+  endif
+  |Khách hàng|
+repeat while (Thất bại và khách\nthử thanh toán lại?) is (có)
+-> không;
+
+|Web (Next.js)|
+if (Đơn đã PAID?) then (có)
+  :Xóa giỏ, hiển thị màn hình xác nhận:
+  mã đơn, trạng thái PAID, điểm vừa cộng;
+  |Khách hàng|
+  :Tới quầy nhận nước khi đơn sẵn sàng;
+  stop
+else (không – khách bỏ dở)
+  |API (NestJS)|
+  :Sau 15 phút tự hủy đơn,
+  trả hàng về kho (UC-11);
+  stop
+endif
+@enduml

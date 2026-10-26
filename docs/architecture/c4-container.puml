@@ -1,0 +1,23 @@
+@startuml c4-container
+' C4 mức 2 – Container của BrewLite (Task 3.1)
+!include <C4/C4_Container>
+LAYOUT_LEFT_RIGHT()
+
+Person(customer, "Khách hàng", "Trình duyệt điện thoại / PWA")
+Person(staff, "Nhân viên quầy", "Trình duyệt tại quầy")
+
+System_Boundary(brewlite, "BrewLite") {
+  Container(web, "Web app", "Next.js 15, React, Tailwind, PWA", "Giao diện mobile-first: menu, giỏ hàng (Zustand), thanh toán bằng mã QR, theo dõi đơn, màn hình quầy. Gọi API bằng fetch + React Query.")
+  Container(api, "API", "NestJS 11, Prisma 6, Docker", "REST JSON theo module: Auth, Products, Promotions, Orders, Payments, Loyalty, Health. Xác thực JWT, validate DTO, state machine đơn hàng, idempotency, kiểm chữ ký webhook.")
+  ContainerDb(db, "CSDL", "PostgreSQL 16", "User, Product, Topping, Promotion, Order, OrderItem, Payment, LoyaltyTransaction. Schema quản lý bằng Prisma migration.")
+}
+
+Container_Ext(gateway, "BrewPay (hệ thống bên thứ ba)", "Node.js 22, Docker, apps/payment-gateway", "Cổng thanh toán bên thứ ba mô phỏng: kiểm chữ ký link, trang Thanh toán / Từ chối, gửi webhook có chữ ký và gửi lại khi lỗi. Không truy cập CSDL của BrewLite.")
+
+Rel(customer, web, "Dùng", "HTTPS")
+Rel(staff, web, "Dùng", "HTTPS")
+Rel(customer, gateway, "Mở paymentUrl (quét QR), xác nhận thanh toán", "HTTPS")
+Rel(web, api, "Gọi REST API, gửi JWT và Idempotency-Key; hỏi trạng thái thanh toán", "HTTPS, JSON")
+Rel(api, db, "Đọc/ghi trong transaction", "TCP 5432, TLS")
+Rel(gateway, api, "POST /payments/webhook, header X-BrewPay-Signature", "HTTPS, JSON")
+@enduml

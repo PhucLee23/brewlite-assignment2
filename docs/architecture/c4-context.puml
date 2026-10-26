@@ -1,0 +1,16 @@
+@startuml c4-context
+' C4 mức 1 – System Context của BrewLite (Task 3.1)
+!include <C4/C4_Context>
+LAYOUT_LEFT_RIGHT()
+
+Person(customer, "Khách hàng", "Đặt và thanh toán đồ uống trên điện thoại")
+Person(staff, "Nhân viên quầy", "Xem đơn đã thanh toán, cập nhật trạng thái pha chế, xem giao dịch")
+System(brewlite, "BrewLite", "Ứng dụng web/PWA đặt cà phê không tiền mặt")
+System_Ext(payment, "BrewPay", "Cổng thanh toán bên thứ ba (mô phỏng Momo/VNPay/thẻ): trang thanh toán, báo kết quả qua webhook")
+
+Rel(customer, brewlite, "Xem menu, đặt đơn, theo dõi đơn", "HTTPS")
+Rel(customer, payment, "Quét mã QR, xác nhận hoặc từ chối thanh toán", "HTTPS")
+Rel(staff, brewlite, "Cập nhật trạng thái đơn", "HTTPS")
+Rel(brewlite, payment, "Chuyển khách sang trang thanh toán (link có chữ ký)", "HTTPS")
+Rel_Back(brewlite, payment, "Báo kết quả giao dịch (webhook HMAC-SHA256)", "HTTPS")
+@enduml

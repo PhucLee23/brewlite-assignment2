@@ -118,7 +118,7 @@ Các yêu cầu bên dưới dẫn chiếu tới những quy tắc này.
 | --- | --- | --- | --- |
 | FR-17 | Vòng đời trạng thái đơn | Must | 1. Mọi thay đổi trạng thái đi qua một hàm kiểm tra theo BR-06; chuyển tiếp không hợp lệ trả 409.<br>2. Hai yêu cầu đổi trạng thái cùng lúc trên một đơn chỉ một yêu cầu thành công. |
 | FR-18 | Nhân viên cập nhật trạng thái | Must | 1. `PATCH /orders/:id/status` chỉ cho vai trò `STAFF`; khách gọi trả 403.<br>2. Chỉ nhận các giá trị theo BR-07; giá trị khác trả 400. |
-| FR-19 | Màn hình quầy | Should | 1. Nhân viên đăng nhập thấy danh sách đơn `PAID`, `PREPARING`, `READY`, cũ nhất trước, kèm món, size, topping.<br>2. Mỗi đơn có nút chuyển sang trạng thái kế tiếp; danh sách tự làm mới tối thiểu mỗi 15 giây. |
+| FR-19 | Màn hình quầy | Should | 1. Nhân viên đăng nhập thấy đơn chia 5 nhóm, mỗi nhóm có số đơn: chờ pha (`PAID`), đang pha (`PREPARING`), sẵn sàng (`READY`), đã giao (`COMPLETED`), đã hủy (`CANCELLED`); ba nhóm đầu xếp cũ nhất trước, hai nhóm sau mới nhất trước; mỗi đơn kèm món, size, topping.<br>2. Mỗi đơn chưa xong có nút chuyển sang trạng thái kế tiếp; đơn `PAID` có thêm nút hủy (hỏi xác nhận trước khi hủy); danh sách tự làm mới tối thiểu mỗi 15 giây. |
 | FR-20 | Tự hủy đơn chưa thanh toán | Should | 1. Đơn thỏa BR-08 được hủy tự động, trả hàng về kho.<br>2. Việc kiểm tra chạy định kỳ và mỗi khi có đơn mới, để hàng không bị giữ khi server vừa khởi động lại. |
 
 ### 3.8 Mở rộng và ngoài phạm vi
@@ -129,8 +129,8 @@ Các yêu cầu bên dưới dẫn chiếu tới những quy tắc này.
 | FR-22 | Thông báo khi đơn sẵn sàng | Could | Thông báo trong ứng dụng khi đơn chuyển sang `READY` |
 | FR-23 | Đổi điểm thưởng lấy giảm giá | Won't | Phiên bản sau |
 | FR-24 | Quản lý menu, giá, tồn kho | Won't | Phiên bản sau; hiện nạp bằng seed |
-| FR-25 | Thanh toán qua cổng thật, hoàn tiền | Won't | Cần hợp đồng merchant |
-| FR-26 | Xem giao dịch thanh toán | Could | `GET /payments` chỉ cho vai trò `STAFF`: 100 giao dịch mới nhất, lọc theo trạng thái (thành công, đang chờ, thất bại, hết hạn), tổng tiền đã nhận chỉ tính giao dịch `SUCCESS`; trang tự làm mới để thấy tiền vào khi BrewPay báo về |
+| FR-25 | Thanh toán qua cổng thật, hoàn tiền tự động | Won't | Cần hợp đồng merchant; nhân viên hoàn tiền tại quầy dựa trên mục "Cần hoàn tiền" của FR-26 |
+| FR-26 | Xem giao dịch thanh toán | Could | `GET /payments` chỉ cho vai trò `STAFF`: 100 giao dịch mới nhất, lọc theo trạng thái (thành công, cần hoàn tiền, đang chờ, thất bại, hết hạn); tổng tiền đã nhận chỉ tính giao dịch `SUCCESS` của đơn chưa hủy; giao dịch `SUCCESS` của đơn đã hủy hiện là "Cần hoàn tiền" và có tổng riêng; trang tự làm mới để thấy tiền vào khi BrewPay báo về |
 
 ## 4. Yêu cầu phi chức năng
 

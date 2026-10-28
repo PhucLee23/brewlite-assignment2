@@ -7,7 +7,16 @@ Bài tập lớn môn Công nghệ Phần mềm (Assignment 2), Trường Đại
 
 ## Tài liệu
 
-Tài liệu yêu cầu, sơ đồ và kiến trúc nằm trong thư mục [docs/](docs/README.md).
+| Nội dung | Tệp |
+| --- | --- |
+| Bối cảnh, stakeholder, phạm vi | [docs/requirements/context-and-scope.md](docs/requirements/context-and-scope.md) |
+| Đặc tả yêu cầu (SRS) | [docs/requirements/srs.md](docs/requirements/srs.md) |
+| Đặc tả use-case trọng tâm | [docs/requirements/uc-06-dat-va-thanh-toan.md](docs/requirements/uc-06-dat-va-thanh-toan.md) |
+| Sơ đồ activity, sequence, class | [docs/diagrams/](docs/diagrams/) |
+| Kiến trúc, ADR, deployment diagram | [docs/architecture/](docs/architecture/) |
+| Ma trận truy vết | [docs/traceability-matrix.md](docs/traceability-matrix.md) |
+
+Danh mục đầy đủ và quy ước tài liệu: [docs/README.md](docs/README.md).
 
 ## Cấu trúc repository
 

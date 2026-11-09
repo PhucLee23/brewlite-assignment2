@@ -18,7 +18,8 @@ start
 repeat
   :Gọi GET /products;
   |API (NestJS)|
-  :Đọc danh sách món từ CSDL;
+  :Đọc danh sách món và tồn kho nguyên liệu,
+tính số ly còn bán được (BR-09);
   |Web (Next.js)|
 repeat while (Tải menu lỗi?) is (lỗi: hiển thị\nthông báo và nút Thử lại)
 -> thành công;
@@ -29,12 +30,12 @@ repeat while (Tải menu lỗi?) is (lỗi: hiển thị\nthông báo và nút T
 repeat
   :Chọn món, size, topping, số lượng;
   |Web (Next.js)|
-  if (Số lượng chọn ≤ tồn kho\ntrừ số ly đã có trong giỏ?) then (còn đủ)
+  if (Số lượng chọn ≤ số ly còn làm được\ncủa size, topping đã chọn\ntrừ số ly đã có trong giỏ?) then (còn đủ)
     :Thêm vào giỏ (gộp dòng trùng),
     cập nhật tổng tiền và badge;
   else (hết hàng / vượt tồn kho)
     :Khóa nút thêm,
-    báo "Chỉ còn N phần";
+    báo "Chỉ còn N ly";
   endif
   |Khách hàng|
 repeat while (Chọn thêm món?) is (có)
@@ -55,8 +56,8 @@ else (rồi)
 endif
 
 |Khách hàng|
-:Chọn Ví/Thẻ, nhập mã giảm giá (tùy chọn),
-bấm Xác nhận trả;
+:Nhập mã giảm giá (tùy chọn), chọn cổng
+MoMo hoặc VNPay, bấm Thanh toán;
 
 |Web (Next.js)|
 :POST /orders kèm JWT
@@ -64,12 +65,13 @@ và Idempotency-Key của giỏ;
 |API (NestJS)|
 :Kiểm tra JWT, validate dữ liệu,
 tính lại giá từ CSDL;
-:Transaction: trừ tồn kho theo productId tăng dần
-(optimistic locking), tạo đơn PENDING;
-if (Đủ tồn kho cho mọi món?) then (không)
+:Tính nguyên liệu cần theo công thức và size;
+:Transaction: trừ nguyên liệu theo ingredientId tăng dần
+(optimistic locking), tạo đơn PENDING, lưu lượng đã trừ;
+if (Đủ nguyên liệu cho mọi món?) then (không)
   :Hủy transaction, trả 409;
   |Web (Next.js)|
-  :Báo "… chỉ còn N phần",
+  :Báo "… size L chỉ còn N ly",
   giữ nguyên giỏ hàng;
   |Khách hàng|
   :Sửa giỏ hàng;
@@ -79,33 +81,36 @@ endif
 
 repeat
   |Web (Next.js)|
-  :POST /payments kèm Idempotency-Key mới;
+  :POST /payments kèm Idempotency-Key mới
+  và cổng đã chọn;
   |API (NestJS)|
   :Khóa đơn, tạo Payment PROCESSING (hạn 15 phút),
-  ký link BrewPay, đơn vẫn PENDING;
+  mở giao dịch ở cổng, đơn vẫn PENDING;
   |Web (Next.js)|
-  :Hiện mã QR chứa link BrewPay và nút "Mở BrewPay",
-  hỏi GET /payments/:id mỗi 1,5 giây;
+  :Chuyển trình duyệt sang trang của cổng;
   |Khách hàng|
-  if (Mở BrewPay trước khi phiên hết hạn?) then (có)
-    :Quét mã QR (hoặc bấm nút),
-    bấm Thanh toán hoặc Từ chối;
-    |BrewPay (bên thứ ba)|
-    :Kiểm tra chữ ký link,
-    ghi nhận kết quả giao dịch;
-    :Gửi webhook có chữ ký HMAC
-    (gửi lại nếu API chưa nhận);
+  if (Trả hoặc hủy trước khi phiên hết hạn?) then (có)
+    :Nhập thẻ (hoặc quét mã bằng app),
+    xác nhận trả tiền hoặc bấm Hủy;
+    |Cổng MoMo / VNPay|
+    :Ghi nhận kết quả giao dịch;
+    :Chuyển khách về trang chờ kèm kết quả
+    có chữ ký, gửi IPN tới API;
+    |Web (Next.js)|
+    :POST /payments/:id/return
+    với tham số cổng gửi về;
     |API (NestJS)|
-    :Kiểm tra chữ ký và số tiền
-    (sai thì trả 401 / 400, bỏ qua webhook);
+    :Kiểm tra chữ ký, mã giao dịch, số tiền,
+    hỏi lại cổng bằng API tra cứu
+    (sai thì từ chối, không đổi trạng thái);
   else (không – quá 15 phút)
     |API (NestJS)|
     :Đánh phiên FAILED;
   endif
   |API (NestJS)|
   if (Kết quả thanh toán?) then (SUCCESS)
-    :Payment SUCCESS, đơn PAID,
-    cộng điểm (LoyaltyTransaction EARN);
+    :Payment SUCCESS (lưu mã giao dịch, ngân hàng),
+    đơn PAID, cộng điểm (LoyaltyTransaction EARN);
   else (FAILED)
     :Payment FAILED, đơn PAYMENT_FAILED;
     |Web (Next.js)|
@@ -119,14 +124,15 @@ repeat while (Thất bại và khách\nthử thanh toán lại?) is (có)
 |Web (Next.js)|
 if (Đơn đã PAID?) then (có)
   :Xóa giỏ, hiển thị màn hình xác nhận:
-  mã đơn, trạng thái PAID, điểm vừa cộng;
+  mã đơn, trạng thái PAID, điểm vừa cộng,
+  nút xem biên lai;
   |Khách hàng|
   :Tới quầy nhận nước khi đơn sẵn sàng;
   stop
 else (không – khách bỏ dở)
   |API (NestJS)|
   :Sau 15 phút tự hủy đơn,
-  trả hàng về kho (UC-11);
+  trả nguyên liệu về kho (UC-11);
   stop
 endif
 @enduml

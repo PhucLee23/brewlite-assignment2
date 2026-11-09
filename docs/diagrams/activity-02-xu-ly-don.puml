@@ -62,7 +62,7 @@ start
 :Khóa dòng đơn, kiểm tra không có
 thanh toán đang xử lý;
 if (Đơn còn PAID?) then (có)
-  :CANCELLED, trả hàng về kho,
+  :CANCELLED, trả nguyên liệu về kho,
   thu hồi điểm (LoyaltyTransaction REVOKE);
   |Web (Next.js)|
   :Hiển thị đơn đã hủy;

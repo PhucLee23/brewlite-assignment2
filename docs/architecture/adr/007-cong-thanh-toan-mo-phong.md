@@ -1,6 +1,8 @@
 # ADR-007: Cổng thanh toán BrewPay mô phỏng bên thứ ba, kết quả chỉ nhận qua webhook có chữ ký
 
-**Trạng thái:** Chấp nhận
+**Trạng thái:** Đã thay thế bởi [ADR-010](010-cong-thanh-toan-momo-vnpay.md)
+
+> Quyết định dưới đây được giữ lại để truy vết lịch sử thiết kế. Hệ thống hiện thanh toán qua cổng MoMo, VNPay (sandbox) theo ADR-010; dịch vụ BrewPay không còn được xây dựng.
 
 ## Bối cảnh
 

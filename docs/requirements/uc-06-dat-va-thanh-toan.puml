@@ -11,15 +11,15 @@ skinparam usecase {
 skinparam actorBorderColor #5A3A22
 
 actor "Khách hàng" as Customer
-actor "Cổng thanh toán\nBrewPay\n(bên thứ ba)" as Gateway <<hệ thống>>
+actor "Cổng thanh toán\nMoMo, VNPay\n(bên thứ ba, sandbox)" as Gateway <<hệ thống>>
 
 rectangle "BrewLite – phạm vi UC-06" {
   usecase "Áp dụng mã giảm giá\n(UC-07)" as Promo
   usecase "UC-06 Đặt và thanh toán\nđơn hàng" as UC06 #F3D9B1
   usecase "Đăng nhập\n(UC-05)" as Login
-  usecase "Tạo đơn hàng\nvà giữ tồn kho" as CreateOrder
-  usecase "Thanh toán Ví/Thẻ\nqua BrewPay (mã QR)" as Pay
-  usecase "Xác nhận kết quả\nthanh toán (webhook)" as Confirm
+  usecase "Tạo đơn hàng\nvà trừ nguyên liệu" as CreateOrder
+  usecase "Thanh toán trên trang\ncủa MoMo hoặc VNPay" as Pay
+  usecase "Xác nhận kết quả có chữ ký\n(link quay về, IPN, tra cứu)" as Confirm
   usecase "Thanh toán lại\nđơn bị lỗi" as Retry
   usecase "Cộng điểm thưởng" as Earn
 }

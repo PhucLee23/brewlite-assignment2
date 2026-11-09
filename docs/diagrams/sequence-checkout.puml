@@ -1,6 +1,6 @@
 @startuml sequence-checkout
 ' Sequence-01: UC-06 Đặt và thanh toán đơn hàng (Task 2.2)
-' Liên kết: FR-07, FR-08, FR-10, FR-11, FR-12, FR-13, FR-14; NFR-04, NFR-06; ADR-006, ADR-007
+' Liên kết: FR-07, FR-08, FR-10, FR-11, FR-12, FR-13, FR-14; NFR-04, NFR-06; BR-09; ADR-006, ADR-010, ADR-011
 skinparam shadowing false
 skinparam defaultFontName Arial
 skinparam sequenceMessageAlign left
@@ -15,14 +15,14 @@ actor "Customer" as C
 participant "Next.js UI" as UI
 participant "NestJS API" as API
 database "Database\n(PostgreSQL)" as DB
-participant "Payment Service\n(BrewPay – bên thứ ba)" as PS
+participant "Cổng MoMo / VNPay\n(bên thứ ba, sandbox)" as PG
 
-C -> UI : Bấm "Xác nhận trả"\n(phương thức WALLET/CARD)
+C -> UI : Chọn cổng MoMo hoặc VNPay,\nbấm "Thanh toán … qua <cổng>"
 activate UI
 UI -> UI : orderKey = khóa của giỏ hàng hiện tại\n(giữ nguyên nếu giỏ không đổi)
 
 == Tạo đơn hàng ==
-UI -> API : POST /orders\nAuthorization: Bearer <JWT>\nIdempotency-Key: orderKey\n{ items[], promoCode? }
+UI -> API : POST /orders\nAuthorization: Bearer <JWT>\nIdempotency-Key: orderKey\n{ items[], promotionCode? }
 activate API
 API -> API : JwtAuthGuard kiểm tra chữ ký và hạn JWT
 alt JWT thiếu / sai / hết hạn
@@ -35,21 +35,21 @@ else JWT hợp lệ
   end
   API -> DB : SELECT Order WHERE idempotencyKey = "userId:orderKey"
   DB --> API : (không có)
-  API -> DB : SELECT Product, Topping, Promotion
-  DB --> API : giá gốc, giá topping, mã giảm giá
-  API -> API : Tính giá phía server (BR-01, BR-04)
+  API -> DB : SELECT Product, Topping kèm công thức nguyên liệu; Promotion
+  DB --> API : giá, công thức, mã giảm giá
+  API -> API : Tính giá phía server (BR-01, BR-04);\ncộng dồn nguyên liệu cần theo size (BR-09)
   group Transaction (READ COMMITTED)
-    loop từng món theo productId tăng dần
-      API -> DB : SELECT stock, version FROM Product WHERE id = ?
+    loop từng nguyên liệu theo ingredientId tăng dần
+      API -> DB : SELECT stock, version FROM Ingredient WHERE id = ?
       DB --> API : stock, version
-      API -> DB : UPDATE Product SET stock = stock - qty, version = version + 1\nWHERE id = ? AND version = ?
+      API -> DB : UPDATE Ingredient SET stock = stock - cần, version = version + 1\nWHERE id = ? AND version = ?
       DB --> API : số dòng cập nhật (1 = thành công, 0 = xung đột → đọc lại, thử lại)
     end
-    API -> DB : INSERT Order (PENDING) + OrderItem[]
+    API -> DB : INSERT Order (PENDING) + OrderItem[] + OrderIngredient[]
     DB --> API : order
   end
-  alt Không đủ tồn kho
-    API --> UI : 409 "‹món› chỉ còn N phần" (transaction rollback)
+  alt Không đủ nguyên liệu
+    API --> UI : 409 "‹món› size ‹L› chỉ còn N ly" (transaction rollback)
     UI --> C : Báo lỗi, giữ nguyên giỏ hàng
   else Tạo đơn thành công
     API --> UI : 201 Order { id, status: PENDING, total }
@@ -57,9 +57,9 @@ else JWT hợp lệ
 end
 deactivate API
 
-== Mở phiên thanh toán ==
+== Mở phiên thanh toán ở cổng ==
 UI -> UI : payKey = khóa mới cho lần thanh toán này
-UI -> API : POST /payments\nAuthorization: Bearer <JWT>\nIdempotency-Key: payKey\n{ orderId, method }
+UI -> API : POST /payments\nAuthorization: Bearer <JWT>\nIdempotency-Key: payKey\n{ orderId, provider, returnOrigin }
 activate API
 API -> API : JwtAuthGuard + ValidationPipe
 API -> DB : SELECT Payment WHERE idempotencyKey = payKey
@@ -67,68 +67,80 @@ DB --> API : (không có)
 group Transaction: giữ chỗ khóa thanh toán
   API -> DB : SELECT id FROM "Order" WHERE id = ? FOR UPDATE
   API -> DB : Kiểm tra đơn thuộc khách, ở PENDING / PAYMENT_FAILED,\nchưa có phiên PROCESSING còn hạn
-  API -> DB : INSERT Payment (PROCESSING, amount = order.total,\nidempotencyKey UNIQUE)
+  API -> DB : INSERT Payment (PROCESSING, provider, amount = order.total,\nidempotencyKey UNIQUE, gatewayOrderId ngẫu nhiên)
   DB --> API : payment
 end
-API -> API : Ký link: HMAC-SHA256(GATEWAY_SECRET,\npaymentId|orderId|amount|method|expiresAt)
-API --> UI : 201 { paymentId, paymentUrl, expiresAt, replayed: false }\n(đơn vẫn PENDING)
+alt provider = VNPAY
+  API -> API : Ký link thanh toán HMAC-SHA512(vnp_HashSecret)\n(số tiền, mã giao dịch, link quay về, hạn 15 phút)
+else provider = MOMO
+  API -> PG : POST /v2/gateway/api/create\n(chữ ký HMAC-SHA256, hạn 15 phút)
+  PG --> API : payUrl
+end
+alt Cổng không mở được giao dịch
+  API -> DB : UPDATE Payment SET status = FAILED
+  API --> UI : 502 + lý do (khách bấm lại hoặc chọn cổng khác)
+else Mở được
+  API -> DB : UPDATE Payment SET payUrl
+  API --> UI : 201 { id, paymentUrl, expiresAt, replayed: false }\n(đơn vẫn PENDING)
+end
 deactivate API
-UI --> C : Trang /payments/:id: mã QR chứa paymentUrl\n+ nút "Mở BrewPay"
+UI --> C : Chuyển trình duyệt sang paymentUrl
+deactivate UI
 
-== Thanh toán tại BrewPay ==
-par Khách thanh toán ở BrewPay
-  C -> PS : Quét mã QR hoặc bấm "Mở BrewPay"
-  activate PS
-  PS -> PS : Kiểm tra chữ ký link và hạn phiên
-  PS --> C : Trang BrewPay: số tiền, phương thức,\nnút "Thanh toán" / "Từ chối"
-  C -> PS : Bấm "Thanh toán" (hoặc "Từ chối")
-  PS --> C : Trang kết quả của BrewPay
-  PS -> API : POST /payments/webhook\nX-BrewPay-Signature: HMAC-SHA256(GATEWAY_SECRET,\npaymentId|status|amount|gatewayRef)\n{ paymentId, status, amount, gatewayRef }
-  activate API
-  API -> API : Kiểm tra chữ ký (so sánh thời gian hằng)
-  alt Sai chữ ký
-    API --> PS : 401 (không đổi trạng thái)
-  else Số tiền khác Payment.amount
-    API --> PS : 400 (không đổi trạng thái)
-  else Hợp lệ
-    API -> DB : SELECT Payment WHERE id = paymentId
-    DB --> API : payment
-    alt Payment không còn PROCESSING (webhook gửi lặp)
-      API --> PS : 200 { ignored: true }
-    else status = SUCCESS
-      group Transaction: ghi kết quả
-        API -> DB : UPDATE Payment SET status = SUCCESS, gatewayRef, confirmedAt\nWHERE id = ? AND status = PROCESSING
-        API -> DB : UPDATE Order SET status = PAID WHERE id = ? AND status = PENDING
-        API -> DB : INSERT LoyaltyTransaction (EARN, +total/1000 điểm)\nUPDATE User SET loyaltyPoints += điểm
-      end
-      API --> PS : 200
-    else status = FAILED
-      group Transaction: ghi kết quả
-        API -> DB : UPDATE Payment SET status = FAILED, gatewayRef, confirmedAt\nWHERE id = ? AND status = PROCESSING
-        API -> DB : UPDATE Order SET status = PAYMENT_FAILED WHERE id = ? AND status = PENDING
-      end
-      API --> PS : 200
+== Khách trả tiền trên trang của cổng ==
+C -> PG : Nhập thẻ (hoặc quét mã bằng app),\nxác nhận trả tiền hoặc bấm Hủy
+activate PG
+PG -> PG : Kiểm tra chữ ký link, xử lý giao dịch
+PG --> C : Chuyển về /payments/:id?<kết quả có chữ ký>
+opt API có địa chỉ công khai (production)
+  PG -> API : IPN (MoMo: POST /payments/momo/ipn,\nVNPay: GET /payments/vnpay/ipn) kèm chữ ký
+end
+deactivate PG
+
+C -> UI : Mở trang chờ /payments/:id
+activate UI
+UI -> API : POST /payments/:id/return { params } (JWT)
+activate API
+API -> API : Kiểm tra chữ ký của cổng (so sánh thời gian hằng)\nvà mã giao dịch khớp phiên
+alt Sai chữ ký / của giao dịch khác
+  API --> UI : 400 (không đổi trạng thái)
+else Hợp lệ
+  API -> PG : Tra cứu giao dịch (VNPay querydr, MoMo /api/query)
+  PG --> API : trạng thái, số tiền, mã giao dịch (có chữ ký)
+  API -> API : Kiểm tra số tiền = Payment.amount
+  group Transaction: ghi kết quả (link quay về, IPN, tra cứu dùng chung)
+    API -> DB : SELECT id FROM "Order" WHERE id = ? FOR UPDATE
+    API -> DB : SELECT Payment
+    alt Payment không còn PROCESSING (kết quả đến lần hai)
+      API -> API : Bỏ qua, không cộng điểm lần hai
+    else Thành công
+      API -> DB : UPDATE Payment SET status = SUCCESS, gatewayRef, bankCode,\npayType, gatewayResult, confirmedAt
+      API -> DB : UPDATE Order SET status = PAID WHERE id = ? AND status = PENDING
+      API -> DB : INSERT LoyaltyTransaction (EARN, +total/1000 điểm)\nUPDATE User SET loyaltyPoints += điểm
+    else Thất bại (khách bấm Hủy, cổng từ chối)
+      API -> DB : UPDATE Payment SET status = FAILED, confirmedAt
+      API -> DB : UPDATE Order SET status = PAYMENT_FAILED WHERE id = ? AND status = PENDING
     end
   end
-  deactivate API
-  opt Không nhận được 2xx (mạng lỗi, API đang khởi động)
-    PS -> API : Gửi lại webhook, tối đa 5 lần, giãn cách tăng dần
-  end
-  deactivate PS
-else Web hỏi kết quả
-  loop mỗi 1,5 giây cho tới khi Payment hết PROCESSING
+  API --> UI : 200 { status, order: { status } }
+end
+deactivate API
+
+opt Khách trả bằng app trên điện thoại khác, không quay về trang chờ
+  loop mỗi 1,5 giây khi phiên còn mở
     UI -> API : GET /payments/:id (JWT)
-    API -> DB : SELECT Payment + Order
-    DB --> API : payment
-    API --> UI : { status, order }
+    API -> PG : Tra cứu giao dịch (tối đa mỗi 4 giây)
+    PG --> API : kết quả có chữ ký
+    API -> DB : Ghi kết quả như trên (chỉ một lần)
+    API --> UI : { status, order: { status } }
   end
 end
 
-alt Payment SUCCESS, đơn PAID
+alt Đơn PAID
   UI -> UI : Xóa giỏ hàng, cập nhật điểm trên header
-  UI --> C : Màn hình xác nhận: mã đơn, PAID,\nđiểm vừa cộng, nhắc tới quầy
-else Payment FAILED, đơn PAYMENT_FAILED
-  UI --> C : Báo lỗi kèm mã đơn, giữ nguyên giỏ hàng,\ncho thanh toán lại (khóa thanh toán mới)
+  UI --> C : Màn hình xác nhận: mã đơn, PAID,\nđiểm vừa cộng, nhắc tới quầy, nút xem biên lai
+else Đơn PAYMENT_FAILED hoặc phiên hết hạn
+  UI --> C : Báo lỗi kèm mã đơn, giữ nguyên giỏ hàng,\ncho chọn cổng thanh toán lại (khóa thanh toán mới)
 end
 
 == Client gửi lại yêu cầu mở phiên (mạng chậm, hết thời gian chờ) ==
@@ -139,9 +151,8 @@ DB --> API : payment đã có với khóa này
 alt Khóa đã dùng cho đơn khác / của người khác
   API --> UI : 409 Conflict
 else Đã có phiên với khóa này
-  API --> UI : 201 { cùng paymentId, paymentUrl, replayed: true }\nkhông tạo phiên mới, không cộng điểm lần hai
+  API --> UI : 201 { cùng id, paymentUrl, replayed: true }\nkhông mở giao dịch mới ở cổng, không cộng điểm lần hai
 end
 deactivate API
-UI --> C : Hiện lại đúng mã QR / kết quả của phiên cũ
 deactivate UI
 @enduml

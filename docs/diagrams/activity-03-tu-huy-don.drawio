@@ -138,7 +138,7 @@
             <mxPoint x="630" y="640" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="6e7K-d9d-85lBjCE7rHw-49" parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;labelBorderColor=none;textShadow=0;" value="&lt;span style=&quot;color: rgb(13, 13, 13); font-family: -apple-system-body, ui-sans-serif, -apple-system, system-ui, &amp;quot;Segoe UI&amp;quot;, Helvetica, &amp;quot;Apple Color Emoji&amp;quot;, Arial, sans-serif, &amp;quot;Segoe UI Emoji&amp;quot;, &amp;quot;Segoe UI Symbol&amp;quot;; font-size: 16px; text-align: start; white-space: pre-line;&quot;&gt;Cộng lại tồn kho từng món theo productId tăng dần, tăng version&lt;/span&gt;" vertex="1">
+        <mxCell id="6e7K-d9d-85lBjCE7rHw-49" parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;labelBorderColor=none;textShadow=0;" value="&lt;span style=&quot;color: rgb(13, 13, 13); font-family: -apple-system-body, ui-sans-serif, -apple-system, system-ui, &amp;quot;Segoe UI&amp;quot;, Helvetica, &amp;quot;Apple Color Emoji&amp;quot;, Arial, sans-serif, &amp;quot;Segoe UI Emoji&amp;quot;, &amp;quot;Segoe UI Symbol&amp;quot;; font-size: 16px; text-align: start; white-space: pre-line;&quot;&gt;Trả lại nguyên liệu đã trừ theo ingredientId tăng dần, tăng version&lt;/span&gt;" vertex="1">
           <mxGeometry height="50" width="240" x="510" y="550" as="geometry" />
         </mxCell>
         <mxCell id="6e7K-d9d-85lBjCE7rHw-54" edge="1" parent="1" source="6e7K-d9d-85lBjCE7rHw-51" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;">

@@ -14,23 +14,22 @@
 | --- | --- |
 | `api` | `npm ci` → lint → unit test → build → integration test trên service container `postgres:16` |
 | `web` | `npm ci` → lint → kiểm tra kiểu → component test → build |
-| `gateway` | Kiểm tra cú pháp và chạy thử `apps/payment-gateway` (gọi `/health`) |
-| `e2e` | Dựng API + web + BrewPay + PostgreSQL, chạy E2E test trên trình duyệt (Playwright) từ Menu tới xác nhận đơn, thanh toán qua trang BrewPay |
+| `e2e` | Dựng API + web + PostgreSQL + cổng VNPay giả (`tests/e2e/mock-vnpay`, ký kết quả như VNPay), chạy E2E test trên trình duyệt (Playwright) từ Menu tới xác nhận đơn, thanh toán qua trang cổng; CI không cần khóa sandbox và không phụ thuộc Internet |
 
 Quy tắc merge vào `main`: chỉ qua pull request, mọi job CI phải thành công (dấu ✓ trên trang pull request), có ít nhất một approve. Repository là private trên gói GitHub Free nên GitHub không tự chặn nút merge. Vì vậy người review kiểm tra trạng thái CI trước khi approve, và người merge kiểm tra lại trước khi bấm merge. Pull request có job đỏ thì sửa trên cùng nhánh cho tới khi xanh.
 
 **CD – `.github/workflows/cd.yml`** (sự kiện `push` vào `main` và tag `v*`):
 
 1. Quality gate: chạy lại lint, test, build (dùng lại workflow CI).
-2. Build image `apps/api` và `apps/payment-gateway` → tag `ghcr.io/<owner>/brewlite-api:<commit-sha>`, `ghcr.io/<owner>/brewlite-pay:<commit-sha>` (và `vX.Y.Z` khi có tag) → push GHCR bằng `GITHUB_TOKEN`.
+2. Build image `apps/api` → tag `ghcr.io/<owner>/brewlite-api:<commit-sha>` (và `vX.Y.Z` khi có tag) → push GHCR bằng `GITHUB_TOKEN`.
 3. `prisma migrate deploy` trên Neon với secret `DATABASE_URL`.
-4. Gọi deploy hook của hai service Render (`RENDER_DEPLOY_HOOK_API`, `RENDER_DEPLOY_HOOK_PAY`) kèm `imgURL` của image vừa push.
+4. Gọi deploy hook của service Render (`RENDER_DEPLOY_HOOK_API`) kèm `imgURL` của image vừa push.
 5. Deploy web lên Vercel bằng Vercel CLI (`VERCEL_TOKEN`).
-6. Smoke test: gọi `GET /health` của API và BrewPay (thử lại tối đa 3 phút vì service có thể đang ngủ) và tải trang chủ web; thất bại thì job đỏ, pipeline dừng.
+6. Smoke test: gọi `GET /health` và `GET /products` của API (thử lại tối đa 3 phút vì service có thể đang ngủ) và tải trang chủ web; thất bại thì job đỏ, pipeline dừng.
 
 **Rollback:**
 
-- API, BrewPay: gọi lại deploy hook với `imgURL` của commit SHA trước đó (hoặc chọn bản deploy cũ trên trang Render).
+- API: gọi lại deploy hook với `imgURL` của commit SHA trước đó (hoặc chọn bản deploy cũ trên trang Render).
 - Web: `vercel rollback` hoặc "Promote" bản deploy cũ trên trang Vercel.
 - CSDL: migration chỉ thêm (ADR-003) nên image cũ vẫn chạy được; nếu cần, viết migration bù.
 

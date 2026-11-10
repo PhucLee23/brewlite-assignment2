@@ -1,4 +1,4 @@
-# ADR-008: Triển khai production trên Vercel (web), Render (API, BrewPay) và Neon (PostgreSQL)
+# ADR-008: Triển khai production trên Vercel (web), Render (API) và Neon (PostgreSQL)
 
 **Trạng thái:** Chấp nhận
 
@@ -19,10 +19,10 @@ Thông tin gói miễn phí (theo trang tài liệu của từng nhà cung cấp
 
 - **Web:** Vercel, build từ `apps/web`, biến `NEXT_PUBLIC_API_URL` trỏ tới API trên Render.
 - **API:** Render Web Service kiểu "existing image", image `ghcr.io/<owner>/brewlite-api:<commit-sha>` do pipeline đẩy lên; health check path `/health`; vùng Singapore.
-- **Cổng BrewPay:** Render Web Service thứ hai, image `ghcr.io/<owner>/brewlite-pay:<commit-sha>`, health check path `/health`, cùng vùng Singapore. Có URL HTTPS riêng (khác tên miền với API), nhận `GATEWAY_SECRET` và `BACKEND_WEBHOOK_URL` qua biến môi trường. Tách service để BrewPay đúng vai bên thứ ba: lỗi hay khởi động lại của bên này không kéo theo bên kia.
+- **Cổng thanh toán:** dùng sandbox của MoMo, VNPay trên Internet (ADR-010), không triển khai service riêng. API nhận `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET` (secret) và `PUBLIC_API_URL` (để cổng gọi IPN) qua biến môi trường; IPN URL trên trang merchant sandbox VNPay trỏ về API production.
 - **CSDL:** Neon, vùng AWS ap-southeast-1 (Singapore) để gần API; kết nối bắt buộc TLS (`sslmode=require`).
 - **Bảo vệ CSDL khi không có giới hạn IP:** chuỗi kết nối chỉ nằm trong biến môi trường của Render và GitHub Secrets (job migrate); mật khẩu ngẫu nhiên do Neon sinh; không có endpoint nào của API trả dữ liệu thô của CSDL; trình duyệt không bao giờ kết nối trực tiếp tới CSDL.
-- **Giảm ảnh hưởng khi service ngủ:** frontend hiển thị trạng thái đang tải và nút thử lại; BrewPay gửi lại webhook khi API chưa trả lời; smoke test có thử lại tối đa 3 phút; trước buổi nghiệm thu mở URL `/health` của API và BrewPay để đánh thức.
+- **Giảm ảnh hưởng khi service ngủ:** frontend hiển thị trạng thái đang tải và nút thử lại; cổng gửi lại IPN khi API chưa trả lời và trang chờ thanh toán tự tra cứu cổng; smoke test có thử lại tối đa 3 phút; trước buổi nghiệm thu mở URL `/health` của API để đánh thức.
 
 ## Phương án đã cân nhắc
 
@@ -35,7 +35,7 @@ Thông tin gói miễn phí (theo trang tài liệu của từng nhà cung cấp
 ## Hệ quả
 
 - Không tốn chi phí; HTTPS và CDN có sẵn; không phải quản trị máy chủ.
-- Lần truy cập đầu sau thời gian rảnh chậm (API, BrewPay ngủ + Neon tạm dừng). Đây là đánh đổi được chấp nhận (NFR-07).
-- Hai service Render dùng chung hạn mức 750 giờ/tháng; vì cả hai ngủ khi rảnh nên với lượng truy cập của dự án vẫn nằm trong hạn mức (R-02).
+- Lần truy cập đầu sau thời gian rảnh chậm (API ngủ + Neon tạm dừng). Đây là đánh đổi được chấp nhận (NFR-07).
+- Chỉ một service Render dùng hạn mức 750 giờ/tháng và ngủ khi rảnh, nên với lượng truy cập của dự án vẫn nằm trong hạn mức (R-02).
 - CSDL Neon vẫn có endpoint trên Internet, được bảo vệ bằng mật khẩu và TLS chứ không bằng mạng riêng; ghi nhận ở rủi ro R-03. Khi lên gói trả phí sẽ bật giới hạn IP hoặc chuyển sang mạng riêng.
 - Web và API khác tên miền: API phải cấu hình CORS đúng origin của Vercel (`FRONTEND_URL`).

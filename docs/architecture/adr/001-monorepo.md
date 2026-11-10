@@ -13,9 +13,8 @@ Dùng **một repository** với cấu trúc:
 ```
 apps/web              Next.js
 apps/api              NestJS + Prisma
-apps/payment-gateway  BrewPay – cổng thanh toán mô phỏng bên thứ ba
 docs/        yêu cầu, sơ đồ, kiến trúc, truy vết, triển khai
-tests/       integration test và E2E test
+tests/       integration test và E2E test (kèm cổng VNPay giả cho E2E)
 .github/workflows/
 ```
 
@@ -26,11 +25,11 @@ Mỗi ứng dụng giữ `package.json` riêng (không dùng npm workspaces) đ�
 | Phương án | Lý do không chọn |
 | --- | --- |
 | Hai repository riêng cho web và API | Một tính năng phải mở hai pull request; khó truy vết; hai pipeline |
-| Monorepo với npm workspaces / Turborepo | Thêm công cụ cần học; Dockerfile phải xử lý lockfile chung; lợi ích chưa cần với ba ứng dụng nhỏ |
+| Monorepo với npm workspaces / Turborepo | Thêm công cụ cần học; Dockerfile phải xử lý lockfile chung; lợi ích chưa cần với hai ứng dụng nhỏ |
 
 ## Hệ quả
 
 - Một pull request chứa đủ thay đổi API, giao diện, test và tài liệu liên quan; người review thấy toàn cảnh.
-- Pipeline CI tách job theo thư mục (`apps/web`, `apps/api`, `apps/payment-gateway`) và chạy song song.
-- BrewPay nằm chung repository cho tiện chạy và kiểm thử, nhưng được coi là hệ thống bên ngoài: không import code của `apps/api`, không dùng chung CSDL, chỉ giao tiếp qua HTTP.
+- Pipeline CI tách job theo thư mục (`apps/web`, `apps/api`) và chạy song song.
+- Cổng thanh toán MoMo, VNPay là hệ thống bên ngoài (ADR-010), không có mã nguồn trong repository; cổng giả dùng cho test nằm trong `tests/`.
 - Ma trận truy vết dẫn link tương đối tới code trong cùng repository.

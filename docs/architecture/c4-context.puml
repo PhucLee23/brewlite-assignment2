@@ -4,13 +4,13 @@
 LAYOUT_LEFT_RIGHT()
 
 Person(customer, "Khách hàng", "Đặt và thanh toán đồ uống trên điện thoại")
-Person(staff, "Nhân viên quầy", "Xem đơn đã thanh toán, cập nhật trạng thái pha chế, xem giao dịch")
+Person(staff, "Nhân viên quầy", "Xem đơn đã thanh toán, cập nhật trạng thái pha chế, xem doanh thu, nhập kho nguyên liệu")
 System(brewlite, "BrewLite", "Ứng dụng web/PWA đặt cà phê không tiền mặt")
-System_Ext(payment, "BrewPay", "Cổng thanh toán bên thứ ba (mô phỏng Momo/VNPay/thẻ): trang thanh toán, báo kết quả qua webhook")
+System_Ext(payment, "Cổng MoMo, VNPay", "Cổng thanh toán bên thứ ba, môi trường sandbox: trang thanh toán ví/thẻ, IPN, API tra cứu giao dịch")
 
 Rel(customer, brewlite, "Xem menu, đặt đơn, theo dõi đơn", "HTTPS")
-Rel(customer, payment, "Quét mã QR, xác nhận hoặc từ chối thanh toán", "HTTPS")
-Rel(staff, brewlite, "Cập nhật trạng thái đơn", "HTTPS")
-Rel(brewlite, payment, "Chuyển khách sang trang thanh toán (link có chữ ký)", "HTTPS")
-Rel_Back(brewlite, payment, "Báo kết quả giao dịch (webhook HMAC-SHA256)", "HTTPS")
+Rel(customer, payment, "Trả tiền bằng thẻ/ví hoặc hủy giao dịch trên trang của cổng", "HTTPS")
+Rel(staff, brewlite, "Cập nhật trạng thái đơn, nhập kho", "HTTPS")
+Rel(brewlite, payment, "Tạo giao dịch (có chữ ký), chuyển khách sang trang của cổng, tra cứu kết quả", "HTTPS")
+Rel_Back(brewlite, payment, "Chuyển khách về kèm kết quả có chữ ký; IPN", "HTTPS")
 @enduml

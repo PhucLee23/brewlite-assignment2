@@ -7,17 +7,18 @@ Person(customer, "Khách hàng", "Trình duyệt điện thoại / PWA")
 Person(staff, "Nhân viên quầy", "Trình duyệt tại quầy")
 
 System_Boundary(brewlite, "BrewLite") {
-  Container(web, "Web app", "Next.js 15, React, Tailwind, PWA", "Giao diện mobile-first: menu, giỏ hàng (Zustand), thanh toán bằng mã QR, theo dõi đơn, màn hình quầy. Gọi API bằng fetch + React Query.")
-  Container(api, "API", "NestJS 11, Prisma 6, Docker", "REST JSON theo module: Auth, Products, Promotions, Orders, Payments, Loyalty, Health. Xác thực JWT, validate DTO, state machine đơn hàng, idempotency, kiểm chữ ký webhook.")
-  ContainerDb(db, "CSDL", "PostgreSQL 16", "User, Product, Topping, Promotion, Order, OrderItem, Payment, LoyaltyTransaction. Schema quản lý bằng Prisma migration.")
+  Container(web, "Web app", "Next.js 15, React, Tailwind, PWA", "Giao diện mobile-first: menu, giỏ hàng (Zustand), chọn cổng thanh toán và trang chờ kết quả, theo dõi đơn, biên lai, màn hình quầy, kho, doanh thu. Gọi API bằng fetch + React Query.")
+  Container(api, "API", "NestJS 11, Prisma 6, Docker", "REST JSON theo module: Auth, Products, Ingredients, Promotions, Orders, Payments (gateways MoMo, VNPay), Loyalty, Health. Xác thực JWT, validate DTO, state machine đơn hàng, trừ nguyên liệu, idempotency, kiểm chữ ký kết quả của cổng.")
+  ContainerDb(db, "CSDL", "PostgreSQL 16", "User, Product, Topping, Ingredient, ProductIngredient, ToppingIngredient, Promotion, Order, OrderItem, OrderIngredient, Payment, LoyaltyTransaction. Schema quản lý bằng Prisma migration.")
 }
 
-Container_Ext(gateway, "BrewPay (hệ thống bên thứ ba)", "Node.js 22, Docker, apps/payment-gateway", "Cổng thanh toán bên thứ ba mô phỏng: kiểm chữ ký link, trang Thanh toán / Từ chối, gửi webhook có chữ ký và gửi lại khi lỗi. Không truy cập CSDL của BrewLite.")
+System_Ext(gateway, "Cổng MoMo, VNPay (bên thứ ba)", "Môi trường sandbox: trang thanh toán ví/thẻ, API tạo giao dịch, IPN, API tra cứu. Không truy cập CSDL của BrewLite.")
 
 Rel(customer, web, "Dùng", "HTTPS")
 Rel(staff, web, "Dùng", "HTTPS")
-Rel(customer, gateway, "Mở paymentUrl (quét QR), xác nhận thanh toán", "HTTPS")
+Rel(customer, gateway, "Mở paymentUrl, trả tiền hoặc hủy, được chuyển về trang chờ", "HTTPS")
 Rel(web, api, "Gọi REST API, gửi JWT và Idempotency-Key; hỏi trạng thái thanh toán", "HTTPS, JSON")
 Rel(api, db, "Đọc/ghi trong transaction", "TCP 5432, TLS")
-Rel(gateway, api, "POST /payments/webhook, header X-BrewPay-Signature", "HTTPS, JSON")
+Rel(api, gateway, "Tạo giao dịch (MoMo), tra cứu kết quả; ký HMAC-SHA256 / SHA512", "HTTPS, JSON")
+Rel(gateway, api, "IPN có chữ ký (khi API có địa chỉ công khai)", "HTTPS")
 @enduml

@@ -1,6 +1,7 @@
 @startuml deployment
 ' UML deployment diagram – môi trường local, CI và production (Task 3.2)
-' Nền tảng thực tế: Vercel (web), Render (API, BrewPay), Neon (PostgreSQL), GitHub Actions + GHCR (CI/CD)
+' Nền tảng thực tế: Vercel (web), Render (API), Neon (PostgreSQL), GitHub Actions + GHCR (CI/CD);
+' cổng MoMo, VNPay sandbox là hệ thống bên ngoài trên Internet
 skinparam shadowing false
 skinparam defaultFontName Arial
 skinparam nodesep 30
@@ -20,14 +21,15 @@ skinparam database {
 left to right direction
 
 rectangle "CI/CD – GitHub" as CI #F5F5F5 {
-  artifact "GitHub Secrets\n----\nDATABASE_URL\nRENDER_DEPLOY_HOOK_API,\nRENDER_DEPLOY_HOOK_PAY\nVERCEL_TOKEN, VERCEL_ORG_ID,\nVERCEL_PROJECT_ID" as Secrets
+  artifact "GitHub Secrets\n----\nDATABASE_URL\nRENDER_DEPLOY_HOOK_API\nVERCEL_TOKEN, VERCEL_ORG_ID,\nVERCEL_PROJECT_ID" as Secrets
   node "GitHub Actions runner\n<<ubuntu-latest>>" as Runner {
     artifact "ci.yml (pull request)\nlint → test → build" as CiYml
     artifact "cd.yml (push main / tag)\nquality gate → image → push\n→ migrate → deploy → smoke test" as CdYml
     database "postgres:16\nservice container\n(integration test)" as CiPg
+    artifact "mock-vnpay\n(cổng VNPay giả cho E2E)" as CiMock
   }
   node "GitHub Container Registry\nghcr.io" as GHCR {
-    artifact "brewlite-api\nbrewlite-pay\ntag <commit-sha>, vX.Y.Z" as Img
+    artifact "brewlite-api\ntag <commit-sha>, vX.Y.Z" as Img
   }
 }
 
@@ -38,44 +40,44 @@ rectangle "PRODUCTION" as PROD #FAFAFA {
   node "Vercel Edge Network (CDN)\n<<PaaS, Hobby>>\n----\nenv: NEXT_PUBLIC_API_URL\nlog: Vercel Runtime Logs" as Vercel {
     artifact "apps/web\nNext.js build" as WebBuild
   }
-  node "Render Web Service – API\n<<Docker container, Free, Singapore>>\n----\nenv: DATABASE_URL, JWT_SECRET,\nJWT_EXPIRES_IN, FRONTEND_URL,\nGATEWAY_SECRET, GATEWAY_PUBLIC_URL\nhealth check: GET /health\nlog: Render Logs (stdout)" as Render {
+  node "Render Web Service – API\n<<Docker container, Free, Singapore>>\n----\nenv: DATABASE_URL, JWT_SECRET,\nJWT_EXPIRES_IN, FRONTEND_URL,\nVNPAY_TMN_CODE, VNPAY_HASH_SECRET,\nPUBLIC_API_URL\nhealth check: GET /health\nlog: Render Logs (stdout)" as Render {
     artifact "brewlite-api:<commit-sha>\nNestJS, cổng $PORT" as ApiImage
-  }
-  node "Render Web Service – BrewPay\n<<Docker container, Free, Singapore>>\n----\nenv: GATEWAY_SECRET,\nBACKEND_WEBHOOK_URL\nhealth check: GET /health\n(hệ thống bên thứ ba mô phỏng)" as RenderPay {
-    artifact "brewlite-pay:<commit-sha>\nNode.js, cổng $PORT" as PayImage
   }
   node "Neon Serverless Postgres\n<<DBaaS, Free, ap-southeast-1>>\n----\nchỉ API và job migrate\ngiữ chuỗi kết nối" as Neon {
     database "PostgreSQL 16\nlưu trữ bền vững" as PG
   }
 }
 
+cloud "Cổng MoMo, VNPay\n<<hệ thống bên thứ ba, sandbox>>" as PG3 {
+  artifact "Trang thanh toán\nAPI tạo giao dịch, tra cứu\nIPN" as GatewayApi
+}
+
 rectangle "LOCAL – máy dev" as LOCAL #F5F5F5 {
   node "Docker Compose" as Dev {
     artifact "web :3000" as LWeb
     artifact "api :4000" as LApi
-    artifact "gateway :5000\n(BrewPay)" as LPay
     database "db :5432\nvolume db_data" as LDb
   }
 }
 
 Secrets ..> CdYml : biến môi trường
 CiYml --> CiPg : test
+CiYml --> CiMock : E2E
 CdYml --> Img : docker push
 CdYml --> Neon : prisma migrate deploy\n(TLS)
 CdYml --> Render : deploy hook HTTPS\n?imgURL=…:<sha>
-CdYml --> RenderPay : deploy hook HTTPS\n?imgURL=…:<sha>
 CdYml --> Vercel : vercel deploy --prod
 CdYml ..> Render : smoke test\nGET /health
 Render ..> GHCR : kéo image\n(read:packages)
-RenderPay ..> GHCR : kéo image
 
 Browser --> WebBuild : HTTPS 443
 Browser --> ApiImage : HTTPS 443\nREST JSON + JWT\nCORS: chỉ origin web
-Browser --> PayImage : HTTPS 443\nmở paymentUrl (quét QR)
-PayImage --> ApiImage : HTTPS 443\nPOST /payments/webhook\nX-BrewPay-Signature
+Browser --> GatewayApi : HTTPS 443\nmở paymentUrl, trả tiền
+ApiImage --> GatewayApi : HTTPS 443\ntạo giao dịch, tra cứu\n(chữ ký HMAC)
+GatewayApi --> ApiImage : HTTPS 443\nIPN có chữ ký
 ApiImage --> PG : TCP 5432, TLS\nsslmode=require
 
 LWeb --> LApi : HTTP
-LPay --> LApi : webhook HTTP
+LApi --> GatewayApi : HTTPS (Internet)\ntạo giao dịch, tra cứu
 LApi --> LDb : TCP
 @enduml

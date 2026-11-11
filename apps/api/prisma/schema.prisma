@@ -9,3 +9,57 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// Đồ uống trên menu. `price` là giá size S (BR-01). Số ly còn bán được không lưu riêng mà tính từ
+// tồn kho nguyên liệu theo công thức `recipe` (BR-09, ADR-011).
+model Product {
+  id          Int                 @id @default(autoincrement())
+  name        String
+  description String
+  price       Int
+  imageUrl    String
+  createdAt   DateTime            @default(now())
+  recipe      ProductIngredient[]
+}
+
+model Topping {
+  id     Int                 @id @default(autoincrement())
+  name   String              @unique
+  price  Int
+  recipe ToppingIngredient[]
+}
+
+// Nguyên liệu trong kho. `stock` tính theo `unit`; `version` dùng cho optimistic locking (ADR-006).
+// `scalesWithSize = false` với thứ dùng đúng 1 cái mỗi ly bất kể size (ly nhựa).
+model Ingredient {
+  id             Int                 @id @default(autoincrement())
+  name           String              @unique
+  unit           String
+  stock          Int
+  version        Int                 @default(0)
+  scalesWithSize Boolean             @default(true)
+  products       ProductIngredient[]
+  toppings       ToppingIngredient[]
+}
+
+// Công thức 1 ly size S; size M, L dùng nhiều hơn theo tỉ lệ ở BR-09
+model ProductIngredient {
+  productId    Int
+  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  ingredientId Int
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+  amount       Int
+
+  @@id([productId, ingredientId])
+}
+
+// Lượng nguyên liệu cho 1 phần topping, không đổi theo size
+model ToppingIngredient {
+  toppingId    Int
+  topping      Topping    @relation(fields: [toppingId], references: [id], onDelete: Cascade)
+  ingredientId Int
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+  amount       Int
+
+  @@id([toppingId, ingredientId])
+}

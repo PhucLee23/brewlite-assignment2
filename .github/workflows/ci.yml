@@ -13,11 +13,28 @@ concurrency:
 
 jobs:
   api:
-    name: API (lint, unit test, build)
+    name: API (lint, unit test, build, integration test)
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: apps/api
+    # PostgreSQL thật cho integration test (ADR-003); CSDL brewlite_test do test tự tạo
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: brewlite
+          POSTGRES_PASSWORD: brewlite
+          POSTGRES_DB: brewlite
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U brewlite"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql://brewlite:brewlite@localhost:5432/brewlite_test?schema=public
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -33,6 +50,8 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
+      - name: Integration test
+        run: npm run test:int
 
   web:
     name: Web (lint, typecheck, component test, build)

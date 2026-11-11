@@ -1,12 +1,18 @@
 ## Nội dung
-Definition of Done, chiến lược nhánh, quy ước commit, mẫu pull request.
+
+<!-- Pull request này thêm/sửa gì -->
 
 ## Lý do
-Thống nhất khi nào một hạng mục được coi là xong và cách cả nhóm làm việc với Git trước khi bắt đầu code.
+
+<!-- Vì sao cần thay đổi; với thay đổi yêu cầu, sơ đồ, kiến trúc: ghi rõ lý do thay đổi -->
 
 ## Yêu cầu và test liên quan
-- TK-03
+
+- Yêu cầu: <!-- FR-xx, NFR-xx -->
+- Test: <!-- UT-xx, CT-xx, API-Txx, E2E-Txx -->
 
 ## Kiểm tra
-- [x] Đã chạy thử ở local
-- [x] Đã cập nhật tài liệu liên quan nếu cần
+
+- [ ] CI xanh (lint, test, build)
+- [ ] Đã chạy thử ở local
+- [ ] Đã cập nhật tài liệu liên quan (ma trận truy vết, `.env.example`, README) nếu cần

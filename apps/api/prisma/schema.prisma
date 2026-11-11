@@ -1,0 +1,11 @@
+// Mô hình dữ liệu BrewLite – khớp Class-01 (docs/diagrams/class-domain.puml).
+// Mỗi thay đổi tạo migration bằng `npx prisma migrate dev --name <mô-tả>` (ADR-003).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}

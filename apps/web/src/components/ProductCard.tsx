@@ -9,7 +9,8 @@ export function stockLabel(stock: number): string | null {
   return null;
 }
 
-export function ProductCard({ product }: { product: Product }) {
+/** `inCart`: số ly món này đang có trong giỏ (FR-05) */
+export function ProductCard({ product, inCart = 0 }: { product: Product; inCart?: number }) {
   const label = stockLabel(product.stock);
   const soldOut = product.stock <= 0;
 
@@ -37,6 +38,11 @@ export function ProductCard({ product }: { product: Product }) {
       <div className="flex flex-1 flex-col justify-end gap-1 p-3 sm:flex-row sm:items-end sm:justify-between sm:gap-2">
         <h2 className="font-medium leading-snug">
           {product.name}
+          {inCart > 0 && (
+            <span className="ml-1.5 inline-block whitespace-nowrap rounded-full bg-crema/15 px-2 py-0.5 align-middle text-xs font-semibold text-roast">
+              {inCart} trong giỏ
+            </span>
+          )}
         </h2>
         <p className="whitespace-nowrap font-semibold text-roast">{formatVnd(product.price)}</p>
       </div>

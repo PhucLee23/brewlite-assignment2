@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { CartLink } from './CartLink';
 import { NavLink } from './NavLink';
 
 // Header mobile-first: dính trên cùng, nút đủ lớn cho ngón tay (NFR-08)
@@ -14,6 +15,7 @@ export function Header() {
         </Link>
         <div className="flex items-center gap-1 whitespace-nowrap text-sm sm:gap-3">
           <NavLink href="/">Menu</NavLink>
+          <CartLink />
         </div>
       </nav>
     </header>

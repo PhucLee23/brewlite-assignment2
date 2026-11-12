@@ -79,3 +79,12 @@ model User {
   loyaltyPoints Int      @default(0)
   createdAt     DateTime @default(now())
 }
+
+// Mã giảm giá theo phần trăm (BR-04)
+model Promotion {
+  code       String    @id
+  percentOff Int
+  minTotal   Int       @default(0)
+  active     Boolean   @default(true)
+  expiresAt  DateTime?
+}

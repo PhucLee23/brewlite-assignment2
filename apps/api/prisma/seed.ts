@@ -127,6 +127,17 @@ async function main() {
       data: recipeRows(toppingRecipes[t.name]).map((r) => ({ ...r, toppingId: topping.id })),
     });
   }
+  // BREW10: luôn dùng được; WELCOME20: cần tạm tính từ 100.000đ; HETHAN: đã hết hạn; TAMNGUNG: đã tắt
+  const promotions = [
+    { code: 'BREW10', percentOff: 10, minTotal: 0, active: true, expiresAt: null },
+    { code: 'WELCOME20', percentOff: 20, minTotal: 100000, active: true, expiresAt: null },
+    { code: 'HETHAN', percentOff: 15, minTotal: 0, active: true, expiresAt: new Date('2025-01-01T00:00:00Z') },
+    { code: 'TAMNGUNG', percentOff: 30, minTotal: 0, active: false, expiresAt: null },
+  ];
+  for (const p of promotions) {
+    await prisma.promotion.upsert({ where: { code: p.code }, update: p, create: p });
+  }
+
   const passwordHash = await bcrypt.hash('123456', 10);
   for (const u of users) {
     // Không ghi đè mật khẩu, điểm thưởng của tài khoản đã có
@@ -138,7 +149,8 @@ async function main() {
   }
 
   console.log(
-    `Seed xong: ${products.length} món, ${ingredients.length} nguyên liệu, ${toppings.length} topping, ${users.length} tài khoản`,
+    `Seed xong: ${products.length} món, ${ingredients.length} nguyên liệu, ${toppings.length} topping, ` +
+      `${users.length} tài khoản, ${promotions.length} mã giảm giá`,
   );
 }
 

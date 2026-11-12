@@ -1,16 +1,17 @@
 import { BadGatewayException, BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { Payment, PaymentProvider, Prisma } from '@prisma/client';
+import { Order, Payment, PaymentProvider, Prisma } from '@prisma/client';
 import { randomBytes } from 'crypto';
 import { AuthUser } from '../auth/current-user.decorator';
 import { LoyaltyService } from '../loyalty/loyalty.service';
 import { lockOrder } from '../orders/lock-order';
 import { transitionOrder } from '../orders/order-transitions';
+import { ORDER_SELECT } from '../orders/orders.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { GatewayError, GatewayHttp, GatewayResult, PaymentGateway } from './gateways/gateway';
 import { MomoGateway } from './gateways/momo';
 import { VnpayGateway } from './gateways/vnpay';
 import { expireStaleSessions, sessionExpiresAt } from './payment-session';
-import { CreatePaymentDto, PaymentDisplayStatus } from './payments.dto';
+import { CreatePaymentDto, PaymentFilter } from './payments.dto';
 
 const TX_OPTIONS = { maxWait: 10_000, timeout: 20_000 };
 /** Trang chờ hỏi mỗi 1,5 giây, nhưng API chỉ tra cứu cổng tối đa mỗi chừng này một lần cho một phiên */
@@ -19,9 +20,22 @@ const GATEWAY_CHECK_INTERVAL_MS = 4_000;
 export const PROVIDER_NAME: Record<PaymentProvider, string> = { MOMO: 'MoMo', VNPAY: 'VNPay' };
 
 /** Trạng thái hiển thị: phiên FAILED mà cổng chưa từng xác nhận là phiên hết hạn */
-export function displayStatus(p: Pick<Payment, 'status' | 'confirmedAt'>): PaymentDisplayStatus {
+export function displayStatus(p: Pick<Payment, 'status' | 'confirmedAt'>): PaymentFilter {
   return p.status === 'FAILED' && !p.confirmedAt ? 'EXPIRED' : p.status;
 }
+
+/** Trang giao dịch (FR-26): tiền đã nhận của đơn đã hủy là tiền cần hoàn lại cho khách */
+function staffStatus(p: Pick<Payment, 'status' | 'confirmedAt'> & { order: Pick<Order, 'status'> }): PaymentFilter {
+  return p.status === 'SUCCESS' && p.order.status === 'CANCELLED' ? 'REFUND_DUE' : displayStatus(p);
+}
+
+const FILTER_WHERE: Record<PaymentFilter, Prisma.PaymentWhereInput> = {
+  SUCCESS: { status: 'SUCCESS', order: { status: { not: 'CANCELLED' } } },
+  REFUND_DUE: { status: 'SUCCESS', order: { status: 'CANCELLED' } },
+  PROCESSING: { status: 'PROCESSING' },
+  FAILED: { status: 'FAILED', confirmedAt: { not: null } },
+  EXPIRED: { status: 'FAILED', confirmedAt: null },
+};
 
 @Injectable()
 export class PaymentsService {
@@ -158,6 +172,76 @@ export class PaymentsService {
     if (payment.amount !== result.amount) return { RspCode: '04', Message: 'invalid amount' };
     const { duplicate } = await this.settle(payment.id, result);
     return duplicate ? { RspCode: '02', Message: 'Order already confirmed' } : { RspCode: '00', Message: 'Confirm Success' };
+  }
+
+  /** FR-26: biên lai – bằng chứng giao dịch do cổng xác nhận; khách xem của mình, nhân viên xem tất cả */
+  async receipt(user: AuthUser, id: number) {
+    await expireStaleSessions(this.prisma);
+    const payment = await this.prisma.payment.findUnique({
+      where: { id },
+      include: { order: { select: { ...ORDER_SELECT, user: { select: { fullName: true, email: true } } } } },
+    });
+    if (!payment || (payment.order.userId !== user.id && user.role !== 'STAFF')) {
+      throw new NotFoundException('Không tìm thấy giao dịch');
+    }
+    const { order, gatewayResult, ...rest } = payment;
+    const { user: customer, ...orderInfo } = order;
+    return {
+      payment: {
+        id: rest.id,
+        orderId: rest.orderId,
+        amount: rest.amount,
+        provider: rest.provider,
+        status: rest.status,
+        displayStatus: staffStatus(payment),
+        gatewayOrderId: rest.gatewayOrderId,
+        gatewayRef: rest.gatewayRef,
+        bankCode: rest.bankCode,
+        payType: rest.payType,
+        createdAt: rest.createdAt,
+        confirmedAt: rest.confirmedAt,
+      },
+      order: orderInfo,
+      customer,
+      gatewayResult,
+    };
+  }
+
+  /** FR-26: 100 giao dịch mới nhất cho nhân viên; tổng tiền đã nhận chỉ tính SUCCESS của đơn chưa hủy */
+  async list(filter?: PaymentFilter) {
+    await expireStaleSessions(this.prisma);
+    const where = filter ? FILTER_WHERE[filter] : {};
+    const [payments, count, received, refundDue] = await Promise.all([
+      this.prisma.payment.findMany({
+        where,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: 100,
+        include: { order: { select: { status: true, user: { select: { fullName: true, email: true } } } } },
+      }),
+      this.prisma.payment.count({ where }),
+      this.prisma.payment.aggregate({ where: FILTER_WHERE.SUCCESS, _sum: { amount: true } }),
+      this.prisma.payment.aggregate({ where: FILTER_WHERE.REFUND_DUE, _sum: { amount: true }, _count: true }),
+    ]);
+    return {
+      received: received._sum.amount ?? 0,
+      refundDue: { count: refundDue._count, amount: refundDue._sum.amount ?? 0 },
+      count,
+      payments: payments.map((p) => ({
+        id: p.id,
+        orderId: p.orderId,
+        amount: p.amount,
+        provider: p.provider,
+        status: p.status,
+        displayStatus: staffStatus(p),
+        gatewayOrderId: p.gatewayOrderId,
+        gatewayRef: p.gatewayRef,
+        bankCode: p.bankCode,
+        payType: p.payType,
+        createdAt: p.createdAt,
+        confirmedAt: p.confirmedAt,
+        customer: p.order.user,
+      })),
+    };
   }
 
   /**

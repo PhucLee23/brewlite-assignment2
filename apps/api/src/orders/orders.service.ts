@@ -36,6 +36,8 @@ export const ORDER_SELECT = {
   },
   // Điểm vừa cộng / thu hồi, hiển thị ở màn hình xác nhận (FR-14)
   loyalty: { select: { type: true, points: true } },
+  // Giao dịch đã thanh toán thành công, để trang đơn có link tới biên lai (FR-26)
+  payments: { where: { status: 'SUCCESS' }, select: { id: true, provider: true }, orderBy: { id: 'desc' } },
 } satisfies Prisma.OrderSelect;
 
 type PricedItem = Omit<Prisma.OrderItemCreateManyOrderInput, 'id'> & { productName: string };

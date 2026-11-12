@@ -22,5 +22,15 @@ export class ConfirmReturnDto {
   params: Record<string, string>;
 }
 
-/** Trạng thái hiển thị của phiên: EXPIRED = phiên hết hạn mà cổng chưa báo kết quả */
-export type PaymentDisplayStatus = 'PROCESSING' | 'SUCCESS' | 'FAILED' | 'EXPIRED';
+/**
+ * Bộ lọc của trang giao dịch (FR-26): EXPIRED = phiên hết hạn chưa có kết quả từ cổng;
+ * REFUND_DUE = tiền đã nhận nhưng đơn đã hủy, nhân viên hoàn lại tại quầy
+ */
+export const PAYMENT_FILTERS = ['SUCCESS', 'REFUND_DUE', 'PROCESSING', 'FAILED', 'EXPIRED'] as const;
+export type PaymentFilter = (typeof PAYMENT_FILTERS)[number];
+
+export class ListPaymentsQuery {
+  @IsOptional()
+  @IsIn(PAYMENT_FILTERS, { message: 'status phải là SUCCESS, REFUND_DUE, PROCESSING, FAILED hoặc EXPIRED' })
+  status?: PaymentFilter;
+}

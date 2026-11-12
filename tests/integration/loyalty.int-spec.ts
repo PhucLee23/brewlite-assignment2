@@ -35,6 +35,7 @@ describe('API-T08 điểm thưởng', () => {
 
     const detail = await request(app.getHttpServer()).get(`/orders/${order.id}`).set('Authorization', `Bearer ${token}`).expect(200);
     expect(detail.body.loyalty).toEqual([{ type: 'EARN', points: 75 }]);
+    expect(detail.body.payments).toEqual([{ id: payment.id, provider: 'VNPAY' }]);
   });
 
   it('thanh toán thất bại không cộng điểm', async () => {

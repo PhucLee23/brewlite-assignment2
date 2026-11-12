@@ -4,3 +4,4 @@ import { testDatabaseUrl } from './test-db';
 process.env.NODE_ENV = 'test';
 process.env.DATABASE_URL = testDatabaseUrl();
 process.env.FRONTEND_URL ??= 'http://localhost:3000';
+process.env.JWT_SECRET ??= 'jwt-secret-cho-test';

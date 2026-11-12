@@ -1,7 +1,14 @@
 // Dữ liệu mẫu. Dùng upsert nên chạy lại an toàn; không ghi đè tồn kho nguyên liệu đã có (ADR-003).
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Role } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
+
+// Tài khoản mẫu cho demo và kiểm thử (mật khẩu 123456)
+const users = [
+  { email: 'khach@brewlite.vn', fullName: 'Khách Demo', role: Role.CUSTOMER },
+  { email: 'barista@brewlite.vn', fullName: 'Barista Demo', role: Role.STAFF },
+];
 
 const products = [
   { id: 1, name: 'Espresso', price: 25000, image: 'espresso', description: 'Một shot cà phê đậm đặc, lớp crema dày.' },
@@ -120,7 +127,19 @@ async function main() {
       data: recipeRows(toppingRecipes[t.name]).map((r) => ({ ...r, toppingId: topping.id })),
     });
   }
-  console.log(`Seed xong: ${products.length} món, ${ingredients.length} nguyên liệu, ${toppings.length} topping`);
+  const passwordHash = await bcrypt.hash('123456', 10);
+  for (const u of users) {
+    // Không ghi đè mật khẩu, điểm thưởng của tài khoản đã có
+    await prisma.user.upsert({
+      where: { email: u.email },
+      update: { fullName: u.fullName, role: u.role },
+      create: { ...u, passwordHash },
+    });
+  }
+
+  console.log(
+    `Seed xong: ${products.length} món, ${ingredients.length} nguyên liệu, ${toppings.length} topping, ${users.length} tài khoản`,
+  );
 }
 
 main()

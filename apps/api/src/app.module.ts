@@ -2,6 +2,7 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { validateEnv } from './common/env.validation';
 import { RequestLoggerMiddleware } from './common/request-logger.middleware';
+import { AuthModule } from './auth/auth.module';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProductsModule } from './products/products.module';
@@ -12,6 +13,7 @@ import { ProductsModule } from './products/products.module';
     ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env', '../../.env'], validate: validateEnv }),
     PrismaModule,
     HealthModule,
+    AuthModule,
     ProductsModule,
   ],
 })

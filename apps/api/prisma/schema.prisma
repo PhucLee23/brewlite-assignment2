@@ -63,3 +63,19 @@ model ToppingIngredient {
 
   @@id([toppingId, ingredientId])
 }
+
+enum Role {
+  CUSTOMER
+  STAFF
+}
+
+// Email lưu chữ thường để kiểm tra trùng không phân biệt hoa thường (FR-06)
+model User {
+  id            Int      @id @default(autoincrement())
+  email         String   @unique
+  passwordHash  String
+  fullName      String
+  role          Role     @default(CUSTOMER)
+  loyaltyPoints Int      @default(0)
+  createdAt     DateTime @default(now())
+}

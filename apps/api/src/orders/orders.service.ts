@@ -5,40 +5,12 @@ import { cupNeeds, RECIPE_SELECT } from '../ingredients/inventory';
 import { PrismaService } from '../prisma/prisma.service';
 import { lineTotal, unitPrice } from '../products/pricing';
 import { PromotionsService } from '../promotions/promotions.service';
+import { OrderLifecycleService } from './order-lifecycle.service';
+import { ORDER_SELECT } from './order-select';
 import { CreateOrderDto, OrderItemDto } from './orders.dto';
 
 // Mỗi lần optimistic lock thất bại nghĩa là một đơn khác vừa trừ cùng nguyên liệu thành công
 const STOCK_RETRIES = 20;
-
-/** Trường trả ra ngoài của một đơn (không lộ khóa idempotency) */
-export const ORDER_SELECT = {
-  id: true,
-  userId: true,
-  status: true,
-  subtotal: true,
-  discount: true,
-  total: true,
-  promotionCode: true,
-  createdAt: true,
-  updatedAt: true,
-  items: {
-    orderBy: { id: 'asc' },
-    select: {
-      id: true,
-      productId: true,
-      productName: true,
-      size: true,
-      toppings: true,
-      qty: true,
-      unitPrice: true,
-      lineTotal: true,
-    },
-  },
-  // Điểm vừa cộng / thu hồi, hiển thị ở màn hình xác nhận (FR-14)
-  loyalty: { select: { type: true, points: true } },
-  // Giao dịch đã thanh toán thành công, để trang đơn có link tới biên lai (FR-26)
-  payments: { where: { status: 'SUCCESS' }, select: { id: true, provider: true }, orderBy: { id: 'desc' } },
-} satisfies Prisma.OrderSelect;
 
 type PricedItem = Omit<Prisma.OrderItemCreateManyOrderInput, 'id'> & { productName: string };
 
@@ -54,6 +26,7 @@ export class OrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly promotions: PromotionsService,
+    private readonly lifecycle: OrderLifecycleService,
   ) {}
 
   /**
@@ -61,6 +34,9 @@ export class OrdersService {
    * Cùng người dùng gửi lại cùng Idempotency-Key thì nhận lại đơn cũ, không trừ kho lần hai.
    */
   async create(userId: number, dto: CreateOrderDto, key?: string) {
+    // FR-20: mỗi khi có đơn mới, giải phóng hàng của các đơn chưa thanh toán quá hạn
+    await this.lifecycle.releaseExpiredOrders();
+
     const scopedKey = key ? `${userId}:${key}` : undefined;
     if (scopedKey) {
       const existing = await this.findByKey(scopedKey);

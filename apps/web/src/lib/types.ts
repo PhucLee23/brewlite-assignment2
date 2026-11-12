@@ -17,7 +17,8 @@ export interface Topping {
   price: number;
 }
 
+// `stock` của size và topping là số ly / số phần còn làm được, tính từ nguyên liệu (BR-09)
 export interface ProductDetail extends Product {
-  sizes: { size: Size; surcharge: number; price: number }[];
-  toppings: Topping[];
+  sizes: { size: Size; surcharge: number; price: number; stock: number }[];
+  toppings: (Topping & { stock: number })[];
 }

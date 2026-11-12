@@ -5,7 +5,7 @@ import { AuthUser } from '../auth/current-user.decorator';
 import { LoyaltyService } from '../loyalty/loyalty.service';
 import { lockOrder } from '../orders/lock-order';
 import { transitionOrder } from '../orders/order-transitions';
-import { ORDER_SELECT } from '../orders/orders.service';
+import { ORDER_SELECT } from '../orders/order-select';
 import { PrismaService } from '../prisma/prisma.service';
 import { GatewayError, GatewayHttp, GatewayResult, PaymentGateway } from './gateways/gateway';
 import { MomoGateway } from './gateways/momo';

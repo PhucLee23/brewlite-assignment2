@@ -5,6 +5,7 @@ import { cupNeeds, RECIPE_SELECT } from '../ingredients/inventory';
 import { PrismaService } from '../prisma/prisma.service';
 import { lineTotal, unitPrice } from '../products/pricing';
 import { PromotionsService } from '../promotions/promotions.service';
+import { OrderLifecycleService } from './order-lifecycle.service';
 import { ORDER_SELECT } from './order-select';
 import { CreateOrderDto, OrderItemDto } from './orders.dto';
 
@@ -25,6 +26,7 @@ export class OrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly promotions: PromotionsService,
+    private readonly lifecycle: OrderLifecycleService,
   ) {}
 
   /**
@@ -32,6 +34,9 @@ export class OrdersService {
    * Cùng người dùng gửi lại cùng Idempotency-Key thì nhận lại đơn cũ, không trừ kho lần hai.
    */
   async create(userId: number, dto: CreateOrderDto, key?: string) {
+    // FR-20: mỗi khi có đơn mới, giải phóng hàng của các đơn chưa thanh toán quá hạn
+    await this.lifecycle.releaseExpiredOrders();
+
     const scopedKey = key ? `${userId}:${key}` : undefined;
     if (scopedKey) {
       const existing = await this.findByKey(scopedKey);

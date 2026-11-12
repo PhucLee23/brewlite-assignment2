@@ -73,14 +73,16 @@ enum Role {
 
 // Email lưu chữ thường để kiểm tra trùng không phân biệt hoa thường (FR-06)
 model User {
-  id            Int      @id @default(autoincrement())
-  email         String   @unique
-  passwordHash  String
-  fullName      String
-  role          Role     @default(CUSTOMER)
-  loyaltyPoints Int      @default(0)
-  createdAt     DateTime @default(now())
-  orders        Order[]
+  id                  Int                  @id @default(autoincrement())
+  email               String               @unique
+  passwordHash        String
+  fullName            String
+  role                Role                 @default(CUSTOMER)
+  // Luôn bằng tổng points của các LoyaltyTransaction của người dùng (FR-13)
+  loyaltyPoints       Int                  @default(0)
+  createdAt           DateTime             @default(now())
+  orders              Order[]
+  loyaltyTransactions LoyaltyTransaction[]
 }
 
 // Mã giảm giá theo phần trăm (BR-04)
@@ -111,23 +113,24 @@ enum OrderStatus {
 }
 
 model Order {
-  id             Int               @id @default(autoincrement())
+  id             Int                  @id @default(autoincrement())
   userId         Int
-  user           User              @relation(fields: [userId], references: [id])
-  status         OrderStatus       @default(PENDING)
+  user           User                 @relation(fields: [userId], references: [id])
+  status         OrderStatus          @default(PENDING)
   subtotal       Int
-  discount       Int               @default(0)
+  discount       Int                  @default(0)
   total          Int
   promotionCode  String?
-  promotion      Promotion?        @relation(fields: [promotionCode], references: [code])
+  promotion      Promotion?           @relation(fields: [promotionCode], references: [code])
   // Khóa chống tạo đơn trùng, lưu dạng userId:key (ADR-006)
-  idempotencyKey String?           @unique
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  idempotencyKey String?              @unique
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
   items          OrderItem[]
   // Nguyên liệu đã trừ khi đặt đơn; hủy đơn trả lại đúng chừng này (FR-16, FR-20)
   ingredients    OrderIngredient[]
   payments       Payment[]
+  loyalty        LoyaltyTransaction[]
 
   @@index([userId, createdAt])
   @@index([status, updatedAt])
@@ -198,4 +201,24 @@ model Payment {
 
   @@index([orderId, status])
   @@index([createdAt])
+}
+
+enum LoyaltyType {
+  EARN
+  REVOKE
+}
+
+// Giao dịch điểm thưởng; mỗi đơn tối đa một EARN và một REVOKE (BR-05, ADR-006)
+model LoyaltyTransaction {
+  id        Int         @id @default(autoincrement())
+  userId    Int
+  user      User        @relation(fields: [userId], references: [id])
+  orderId   Int
+  order     Order       @relation(fields: [orderId], references: [id])
+  type      LoyaltyType
+  points    Int
+  createdAt DateTime    @default(now())
+
+  @@unique([orderId, type])
+  @@index([userId, createdAt])
 }

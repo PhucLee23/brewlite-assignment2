@@ -2,6 +2,7 @@ import { BadGatewayException, BadRequestException, ConflictException, Injectable
 import { Payment, PaymentProvider, Prisma } from '@prisma/client';
 import { randomBytes } from 'crypto';
 import { AuthUser } from '../auth/current-user.decorator';
+import { LoyaltyService } from '../loyalty/loyalty.service';
 import { lockOrder } from '../orders/lock-order';
 import { transitionOrder } from '../orders/order-transitions';
 import { PrismaService } from '../prisma/prisma.service';
@@ -29,6 +30,7 @@ export class PaymentsService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly loyalty: LoyaltyService,
     http: GatewayHttp,
   ) {
     this.gateways = { MOMO: new MomoGateway(http), VNPAY: new VnpayGateway(http) };
@@ -160,7 +162,7 @@ export class PaymentsService {
 
   /**
    * Ghi kết quả cổng đã chốt. Cổng báo lặp (link quay về, IPN, tra cứu cùng lúc) chỉ được xử lý một lần,
-   * nên không đổi trạng thái đơn hai lần (FR-12). Khóa đơn như khi hủy đơn để hai việc không chạy chồng nhau (ADR-006).
+   * nên không cộng điểm hai lần (FR-12). Khóa đơn như khi hủy đơn để hai việc không chạy chồng nhau (ADR-006).
    */
   private async settle(paymentId: number, result: GatewayResult) {
     const payment = await this.prisma.payment.findUniqueOrThrow({ where: { id: paymentId } });
@@ -197,7 +199,10 @@ export class PaymentsService {
         status = 'PENDING';
       }
       // Đơn đã hủy trong lúc chờ thì giữ nguyên: tiền hiện ở mục "Cần hoàn tiền" (FR-26)
-      if (status === 'PENDING') await transitionOrder(tx, order.id, 'PENDING', 'PAID');
+      if (status === 'PENDING') {
+        await transitionOrder(tx, order.id, 'PENDING', 'PAID');
+        await this.loyalty.earn(tx, order);
+      }
       return { duplicate: false };
     }, TX_OPTIONS);
   }

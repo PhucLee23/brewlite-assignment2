@@ -4,6 +4,7 @@ import { validateEnv } from './common/env.validation';
 import { RequestLoggerMiddleware } from './common/request-logger.middleware';
 import { AuthModule } from './auth/auth.module';
 import { HealthModule } from './health/health.module';
+import { IngredientsModule } from './ingredients/ingredients.module';
 import { LoyaltyModule } from './loyalty/loyalty.module';
 import { OrdersModule } from './orders/orders.module';
 import { PaymentsModule } from './payments/payments.module';
@@ -22,6 +23,7 @@ import { PromotionsModule } from './promotions/promotions.module';
     PromotionsModule,
     OrdersModule,
     PaymentsModule,
+    IngredientsModule,
     LoyaltyModule,
   ],
 })

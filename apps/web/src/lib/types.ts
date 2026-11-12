@@ -72,3 +72,21 @@ export interface PaymentSession {
   replayed: boolean;
   order: { id: number; status: OrderStatus; total: number };
 }
+
+/** Biên lai: bằng chứng giao dịch do cổng MoMo/VNPay xác nhận (GET /payments/:id/receipt) */
+export interface Receipt {
+  payment: {
+    id: number;
+    amount: number;
+    provider: PaymentProvider;
+    displayStatus: PaymentDisplayStatus;
+    gatewayOrderId: string;
+    gatewayRef: string | null;
+    bankCode: string | null;
+    payType: string | null;
+    confirmedAt: string | null;
+  };
+  order: Order;
+  customer: { fullName: string; email: string };
+  gatewayResult: Record<string, unknown> | null;
+}

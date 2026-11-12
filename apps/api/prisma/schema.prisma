@@ -127,6 +127,7 @@ model Order {
   items          OrderItem[]
   // Nguyên liệu đã trừ khi đặt đơn; hủy đơn trả lại đúng chừng này (FR-16, FR-20)
   ingredients    OrderIngredient[]
+  payments       Payment[]
 
   @@index([userId, createdAt])
   @@index([status, updatedAt])
@@ -158,4 +159,43 @@ model OrderIngredient {
   amount       Int
 
   @@id([orderId, ingredientId])
+}
+
+// Cổng thanh toán bên thứ ba, môi trường sandbox (ADR-010)
+enum PaymentProvider {
+  MOMO
+  VNPAY
+}
+
+enum PaymentStatus {
+  PROCESSING
+  SUCCESS
+  FAILED
+}
+
+// Phiên thanh toán ở cổng MoMo hoặc VNPay. Tạo ở PROCESSING; chỉ kết quả có chữ ký của cổng (link quay về, IPN,
+// API tra cứu) mới đổi sang SUCCESS / FAILED (BR-07). Quá 15 phút chưa có kết quả thì đánh FAILED (FR-11).
+model Payment {
+  id             Int             @id @default(autoincrement())
+  orderId        Int
+  order          Order           @relation(fields: [orderId], references: [id])
+  // Khóa giữ chỗ chống trừ tiền hai lần, duy nhất toàn hệ thống (ADR-006)
+  idempotencyKey String          @unique
+  amount         Int
+  provider       PaymentProvider
+  status         PaymentStatus   @default(PROCESSING)
+  // Mã đơn gửi sang cổng: không trùng kể cả khi nhiều máy dùng chung một tài khoản sandbox
+  gatewayOrderId String          @unique
+  // Link trang thanh toán của cổng
+  payUrl         String?
+  // Bằng chứng do cổng xác nhận: mã giao dịch, ngân hàng, hình thức trả, dữ liệu gốc có chữ ký (FR-26)
+  gatewayRef     String?
+  bankCode       String?
+  payType        String?
+  gatewayResult  Json?
+  createdAt      DateTime        @default(now())
+  confirmedAt    DateTime?
+
+  @@index([orderId, status])
+  @@index([createdAt])
 }

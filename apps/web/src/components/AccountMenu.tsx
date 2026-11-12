@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useMounted } from '@/lib/use-mounted';
 import { isTokenExpired, useAuth } from '@/store/auth';
+import { NavLink } from './NavLink';
 
 /** Đăng nhập / tài khoản trên header; token hết hạn thì tự đăng xuất (FR-07) */
 export function AccountMenu() {
@@ -26,6 +27,7 @@ export function AccountMenu() {
   }
   return (
     <>
+      <NavLink href="/orders">Đơn hàng</NavLink>
       <div className="flex items-center gap-2 sm:ml-1 sm:border-l sm:border-latte sm:pl-3">
         <span className="hidden text-right leading-tight sm:block">
           <span className="block font-medium">{user.fullName}</span>

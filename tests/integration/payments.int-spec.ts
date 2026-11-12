@@ -168,7 +168,7 @@ describe('Thanh toán qua cổng MoMo, VNPay', () => {
       expect(switched.body.message).toMatch(/Đơn đang có phiên thanh toán VNPay chưa kết thúc/);
     });
 
-    it('link quay về, IPN và tra cứu cùng báo SUCCESS chỉ được xử lý một lần', async () => {
+    it('link quay về, IPN và tra cứu cùng báo SUCCESS chỉ được xử lý một lần, điểm chỉ cộng một lần', async () => {
       const customer = await registerCustomer(app);
       const order = await createPendingOrder(app, prisma, customer.token, 45000, 1);
       const payment = (await postPayment(app, customer.token, order.id).expect(201)).body;
@@ -187,6 +187,8 @@ describe('Thanh toán qua cổng MoMo, VNPay', () => {
       await getPayment(payment.id, customer.token).expect(200);
 
       expect(await orderStatus(order.id)).toBe('PAID');
+      expect((await prisma.user.findUniqueOrThrow({ where: { id: customer.user.id } })).loyaltyPoints).toBe(45);
+      expect(await prisma.loyaltyTransaction.count({ where: { orderId: order.id } })).toBe(1);
     });
   });
 

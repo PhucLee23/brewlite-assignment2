@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import { formatVnd } from '@/lib/format';
 import type { Product } from '@/lib/types';
 
@@ -15,37 +16,39 @@ export function ProductCard({ product, inCart = 0 }: { product: Product; inCart?
   const soldOut = product.stock <= 0;
 
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-latte bg-white">
-      <div className="relative aspect-square overflow-hidden bg-latte">
-        <Image
-          src={product.imageUrl}
-          alt={product.name}
-          fill
-          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-          unoptimized
-          className="object-cover transition-transform duration-500 ease-out motion-safe:group-hover:scale-110 motion-safe:group-focus-visible:scale-110"
-        />
-        {soldOut ? (
-          <span className="absolute inset-0 grid place-items-center bg-white/70 font-semibold text-roast">{label}</span>
-        ) : (
-          label && (
-            <span className="absolute left-2 top-2 rounded-full bg-crema px-2 py-0.5 text-xs font-semibold text-white">
-              {label}
-            </span>
-          )
-        )}
-      </div>
-      <div className="flex flex-1 flex-col justify-end gap-1 p-3 sm:flex-row sm:items-end sm:justify-between sm:gap-2">
-        <h2 className="font-medium leading-snug">
-          {product.name}
-          {inCart > 0 && (
-            <span className="ml-1.5 inline-block whitespace-nowrap rounded-full bg-crema/15 px-2 py-0.5 align-middle text-xs font-semibold text-roast">
-              {inCart} trong giỏ
-            </span>
+    <Link href={`/products/${product.id}`} className="block h-full">
+      <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-latte bg-white transition hover:-translate-y-0.5 hover:shadow-lg">
+        <div className="relative aspect-square overflow-hidden bg-latte">
+          <Image
+            src={product.imageUrl}
+            alt={product.name}
+            fill
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            unoptimized
+            className="object-cover transition-transform duration-500 ease-out motion-safe:group-hover:scale-110 motion-safe:group-focus-visible:scale-110"
+          />
+          {soldOut ? (
+            <span className="absolute inset-0 grid place-items-center bg-white/70 font-semibold text-roast">{label}</span>
+          ) : (
+            label && (
+              <span className="absolute left-2 top-2 rounded-full bg-crema px-2 py-0.5 text-xs font-semibold text-white">
+                {label}
+              </span>
+            )
           )}
-        </h2>
-        <p className="whitespace-nowrap font-semibold text-roast">{formatVnd(product.price)}</p>
-      </div>
-    </article>
+        </div>
+        <div className="flex flex-1 flex-col justify-end gap-1 p-3 sm:flex-row sm:items-end sm:justify-between sm:gap-2">
+          <h2 className="font-medium leading-snug">
+            {product.name}
+            {inCart > 0 && (
+              <span className="ml-1.5 inline-block whitespace-nowrap rounded-full bg-crema/15 px-2 py-0.5 align-middle text-xs font-semibold text-roast">
+                {inCart} trong giỏ
+              </span>
+            )}
+          </h2>
+          <p className="whitespace-nowrap font-semibold text-roast">{formatVnd(product.price)}</p>
+        </div>
+      </article>
+    </Link>
   );
 }

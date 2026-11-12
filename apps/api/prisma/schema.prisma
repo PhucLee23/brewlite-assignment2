@@ -20,6 +20,7 @@ model Product {
   imageUrl    String
   createdAt   DateTime            @default(now())
   recipe      ProductIngredient[]
+  orderItems  OrderItem[]
 }
 
 model Topping {
@@ -40,6 +41,7 @@ model Ingredient {
   scalesWithSize Boolean             @default(true)
   products       ProductIngredient[]
   toppings       ToppingIngredient[]
+  orderUsages    OrderIngredient[]
 }
 
 // Công thức 1 ly size S; size M, L dùng nhiều hơn theo tỉ lệ ở BR-09
@@ -78,6 +80,7 @@ model User {
   role          Role     @default(CUSTOMER)
   loyaltyPoints Int      @default(0)
   createdAt     DateTime @default(now())
+  orders        Order[]
 }
 
 // Mã giảm giá theo phần trăm (BR-04)
@@ -87,4 +90,72 @@ model Promotion {
   minTotal   Int       @default(0)
   active     Boolean   @default(true)
   expiresAt  DateTime?
+  orders     Order[]
+}
+
+enum Size {
+  S
+  M
+  L
+}
+
+// Vòng đời đơn theo BR-06; chỉ đổi qua transitionOrder()
+enum OrderStatus {
+  PENDING
+  PAID
+  PREPARING
+  READY
+  COMPLETED
+  PAYMENT_FAILED
+  CANCELLED
+}
+
+model Order {
+  id             Int               @id @default(autoincrement())
+  userId         Int
+  user           User              @relation(fields: [userId], references: [id])
+  status         OrderStatus       @default(PENDING)
+  subtotal       Int
+  discount       Int               @default(0)
+  total          Int
+  promotionCode  String?
+  promotion      Promotion?        @relation(fields: [promotionCode], references: [code])
+  // Khóa chống tạo đơn trùng, lưu dạng userId:key (ADR-006)
+  idempotencyKey String?           @unique
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  items          OrderItem[]
+  // Nguyên liệu đã trừ khi đặt đơn; hủy đơn trả lại đúng chừng này (FR-16, FR-20)
+  ingredients    OrderIngredient[]
+
+  @@index([userId, createdAt])
+  @@index([status, updatedAt])
+}
+
+// Ảnh chụp tên món, topping và giá lúc đặt, không đổi khi menu đổi giá
+model OrderItem {
+  id          Int      @id @default(autoincrement())
+  orderId     Int
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   Int
+  product     Product  @relation(fields: [productId], references: [id])
+  productName String
+  size        Size
+  toppings    String[]
+  qty         Int
+  unitPrice   Int
+  lineTotal   Int
+
+  @@index([orderId])
+}
+
+// Lượng nguyên liệu đã trừ cho một đơn (cộng dồn mọi dòng của đơn)
+model OrderIngredient {
+  orderId      Int
+  order        Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  ingredientId Int
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+  amount       Int
+
+  @@id([orderId, ingredientId])
 }

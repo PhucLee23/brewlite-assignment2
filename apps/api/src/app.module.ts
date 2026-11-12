@@ -4,6 +4,7 @@ import { validateEnv } from './common/env.validation';
 import { RequestLoggerMiddleware } from './common/request-logger.middleware';
 import { AuthModule } from './auth/auth.module';
 import { HealthModule } from './health/health.module';
+import { OrdersModule } from './orders/orders.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProductsModule } from './products/products.module';
 import { PromotionsModule } from './promotions/promotions.module';
@@ -17,6 +18,7 @@ import { PromotionsModule } from './promotions/promotions.module';
     AuthModule,
     ProductsModule,
     PromotionsModule,
+    OrdersModule,
   ],
 })
 export class AppModule implements NestModule {

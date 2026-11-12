@@ -150,4 +150,22 @@ describe('Đặt đơn', () => {
     });
   });
 
-  // API-T09: lịch sử đơn, không xem được đơn người khác (FR-15)});
+  // API-T09: lịch sử đơn, không xem được đơn người khác (FR-15)
+  it('API-T09 GET /orders/me mới nhất trước; GET /orders/:id của người khác trả 404', async () => {
+    const owner = await registerCustomer(app);
+    const stranger = await registerCustomer(app);
+    const product = await createProduct(prisma, { stock: 10 });
+    const body = { items: [{ productId: product.id, size: 'S', qty: 1 }] };
+    const first = await postOrder(app, owner.token, body).expect(201);
+    const second = await postOrder(app, owner.token, body).expect(201);
+
+    const mine = await request(app.getHttpServer()).get('/orders/me').set('Authorization', `Bearer ${owner.token}`).expect(200);
+    expect(mine.body.map((o: { id: number }) => o.id)).toEqual([second.body.id, first.body.id]);
+
+    await request(app.getHttpServer()).get(`/orders/${first.body.id}`).set('Authorization', `Bearer ${owner.token}`).expect(200);
+    await request(app.getHttpServer()).get(`/orders/${first.body.id}`).set('Authorization', `Bearer ${stranger.token}`).expect(404);
+    await request(app.getHttpServer()).get('/orders/999999').set('Authorization', `Bearer ${owner.token}`).expect(404);
+    const empty = await request(app.getHttpServer()).get('/orders/me').set('Authorization', `Bearer ${stranger.token}`).expect(200);
+    expect(empty.body).toEqual([]);
+  });
+});

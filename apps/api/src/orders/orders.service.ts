@@ -1,5 +1,6 @@
-import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { AuthUser } from '../auth/current-user.decorator';
 import { cupNeeds, RECIPE_SELECT } from '../ingredients/inventory';
 import { PrismaService } from '../prisma/prisma.service';
 import { lineTotal, unitPrice } from '../products/pricing';
@@ -106,6 +107,24 @@ export class OrdersService {
       }
       throw e;
     }
+  }
+
+  /** FR-15: đơn của chính người dùng, mới nhất trước */
+  findMine(userId: number) {
+    return this.prisma.order.findMany({
+      where: { userId },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      select: ORDER_SELECT,
+    });
+  }
+
+  /** Đơn của người khác hoặc không tồn tại đều trả 404; nhân viên quầy xem được mọi đơn */
+  async findOneFor(user: AuthUser, id: number) {
+    const order = await this.prisma.order.findUnique({ where: { id }, select: ORDER_SELECT });
+    if (!order || (order.userId !== user.id && user.role !== 'STAFF')) {
+      throw new NotFoundException('Không tìm thấy đơn hàng');
+    }
+    return order;
   }
 
   private findByKey(idempotencyKey: string) {

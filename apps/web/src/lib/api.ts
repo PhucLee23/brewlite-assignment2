@@ -1,4 +1,5 @@
 // Hàm gọi API duy nhất của web (ADR-004): gắn JWT, Idempotency-Key và chuẩn hóa lỗi tiếng Việt.
+import { useAuth } from '@/store/auth';
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
@@ -15,14 +16,16 @@ export class ApiError extends Error {
 export interface ApiOptions {
   method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
   body?: unknown;
-  token?: string | null;
+  /** Gắn JWT của phiên đăng nhập hiện tại; nhận 401 thì tự đăng xuất và chuyển tới trang đăng nhập (FR-07) */
+  auth?: boolean;
   idempotencyKey?: string;
 }
 
 export async function api<T>(path: string, options: ApiOptions = {}): Promise<T> {
   const headers: Record<string, string> = { Accept: 'application/json' };
   if (options.body !== undefined) headers['Content-Type'] = 'application/json';
-  if (options.token) headers.Authorization = `Bearer ${options.token}`;
+  const token = options.auth ? useAuth.getState().token : null;
+  if (token) headers.Authorization = `Bearer ${token}`;
   if (options.idempotencyKey) headers['Idempotency-Key'] = options.idempotencyKey;
 
   let res: Response;
@@ -38,9 +41,18 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<T>
 
   const data = await res.json().catch(() => null);
   if (!res.ok) {
+    if (res.status === 401 && options.auth) redirectToLogin();
     throw new ApiError(res.status, errorMessage(res.status, data));
   }
   return data as T;
+}
+
+/** Phiên hết hạn hoặc không hợp lệ: xóa phiên, mở trang đăng nhập kèm đường dẫn quay lại */
+export function redirectToLogin() {
+  useAuth.getState().logout();
+  if (typeof window === 'undefined' || window.location.pathname === '/login') return;
+  const next = window.location.pathname + window.location.search;
+  window.location.assign(`/login?next=${encodeURIComponent(next)}&expired=1`);
 }
 
 function errorMessage(status: number, data: unknown): string {

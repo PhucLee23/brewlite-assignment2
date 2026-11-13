@@ -1,0 +1,24 @@
+# Chạy E2E ở máy cá nhân, từ thư mục gốc repository:
+#   docker compose -f docker-compose.yml -f tests/e2e/docker-compose.e2e.yml up -d --build
+# API dùng cổng VNPay giả (tests/e2e/mock-vnpay) thay cho sandbox thật: trình duyệt mở trang thanh toán ở
+# localhost:5055, còn API tra cứu kết quả qua mạng nội bộ của Compose.
+services:
+  mock-vnpay:
+    image: node:22-alpine
+    command: node /app/server.js
+    volumes:
+      - ./tests/e2e/mock-vnpay:/app:ro
+    environment:
+      VNPAY_HASH_SECRET: e2e-vnpay-secret
+      PORT: "5055"
+    ports:
+      - "5055:5055"
+
+  api:
+    environment:
+      VNPAY_TMN_CODE: E2ETEST1
+      VNPAY_HASH_SECRET: e2e-vnpay-secret
+      VNPAY_PAY_URL: http://localhost:5055/paymentv2/vpcpay.html
+      VNPAY_API_URL: http://mock-vnpay:5055/merchant_webapi/api/transaction
+    depends_on:
+      - mock-vnpay

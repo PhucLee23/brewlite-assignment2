@@ -16,12 +16,13 @@ export function ProductCard({ product, inCart = 0 }: { product: Product; inCart?
   const soldOut = product.stock <= 0;
 
   return (
+    // Tên link lấy từ tên món và giá; ảnh chỉ để trang trí nên alt rỗng
     <Link href={`/products/${product.id}`} className="block h-full">
-      <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-latte bg-white transition hover:-translate-y-0.5 hover:shadow-lg">
+      <div className="group flex h-full flex-col overflow-hidden rounded-2xl border border-latte bg-white transition hover:-translate-y-0.5 hover:shadow-lg">
         <div className="relative aspect-square overflow-hidden bg-latte">
           <Image
             src={product.imageUrl}
-            alt={product.name}
+            alt=""
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             unoptimized
@@ -48,7 +49,7 @@ export function ProductCard({ product, inCart = 0 }: { product: Product; inCart?
           </h2>
           <p className="whitespace-nowrap font-semibold text-roast">{formatVnd(product.price)}</p>
         </div>
-      </article>
+      </div>
     </Link>
   );
 }

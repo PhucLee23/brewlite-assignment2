@@ -78,3 +78,79 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
+
+  e2e:
+    name: E2E (Playwright, Menu → cổng VNPay → xác nhận đơn)
+    needs: [api, web]
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: brewlite
+          POSTGRES_PASSWORD: brewlite
+          POSTGRES_DB: brewlite
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U brewlite"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://brewlite:brewlite@localhost:5432/brewlite?schema=public
+      JWT_SECRET: ci-jwt-secret
+      # Cổng VNPay giả trong tests/e2e/mock-vnpay: CI không cần khóa sandbox, không phụ thuộc Internet
+      VNPAY_TMN_CODE: E2ETEST1
+      VNPAY_HASH_SECRET: e2e-vnpay-secret
+      VNPAY_PAY_URL: http://localhost:5055/paymentv2/vpcpay.html
+      VNPAY_API_URL: http://localhost:5055/merchant_webapi/api/transaction
+      FRONTEND_URL: http://localhost:3000
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Dựng API (migrate, seed, chạy nền)
+        working-directory: apps/api
+        run: |
+          npm ci
+          npx prisma migrate deploy
+          npx prisma db seed
+          npm run build
+          nohup node dist/main.js > api.log 2>&1 &
+      - name: Chạy cổng VNPay giả
+        working-directory: tests/e2e/mock-vnpay
+        run: PORT=5055 nohup node server.js > ../mock-vnpay.log 2>&1 &
+      - name: Build và chạy web
+        working-directory: apps/web
+        run: |
+          npm ci
+          npm run build
+          cp -r .next/static .next/standalone/.next/static
+          cp -r public .next/standalone/public
+          PORT=3000 nohup node .next/standalone/server.js > web.log 2>&1 &
+      - name: Chờ các dịch vụ sẵn sàng
+        run: |
+          for url in http://localhost:4000/health http://localhost:5055/health http://localhost:3000/; do
+            for i in $(seq 1 30); do curl -fsS -o /dev/null "$url" && break; sleep 2; done
+            curl -fsS -o /dev/null "$url"
+          done
+      - name: Chạy E2E
+        working-directory: tests/e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npx playwright test
+      - name: Lưu báo cáo khi thất bại
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report
+          path: |
+            tests/e2e/playwright-report
+            tests/e2e/test-results
+            apps/*/*.log
+            tests/e2e/*.log
+          retention-days: 7

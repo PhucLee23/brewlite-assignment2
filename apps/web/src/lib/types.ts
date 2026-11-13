@@ -73,6 +73,12 @@ export interface PaymentSession {
   order: { id: number; status: OrderStatus; total: number };
 }
 
+/** Trang Kho (GET /ingredients, FR-24): tồn nguyên liệu và số ly size S còn bán được của từng món */
+export interface InventoryReport {
+  ingredients: { id: number; name: string; unit: string; stock: number; usedBy: string[]; servings: number | null }[];
+  products: { id: number; name: string; stock: number; limitedBy: string | null }[];
+}
+
 /** Biên lai: bằng chứng giao dịch do cổng MoMo/VNPay xác nhận (GET /payments/:id/receipt) */
 export interface Receipt {
   payment: {

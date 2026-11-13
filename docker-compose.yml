@@ -1,4 +1,7 @@
-# Môi trường local: chạy bằng `docker compose up -d`.
+# Môi trường local: chạy cả 3 dịch vụ bằng `docker compose up -d --build` (NFR-10).
+# Web http://localhost:3000 · API http://localhost:4000 · PostgreSQL localhost:5432
+# Thanh toán đi qua cổng MoMo, VNPay sandbox trên Internet (ADR-010), không có container cổng.
+# Giá trị lấy từ .env (sao chép từ .env.example); thiếu thì dùng giá trị mặc định cho máy cá nhân.
 services:
   db:
     image: postgres:16-alpine
@@ -15,6 +18,43 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  api:
+    build:
+      context: apps/api
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-brewlite}:${POSTGRES_PASSWORD:-brewlite}@db:5432/${POSTGRES_DB:-brewlite}?schema=public
+      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1d}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      # Khóa VNPay sandbox của nhóm chỉ nằm trong .env (không commit); MoMo bỏ trống thì dùng khóa test công khai
+      VNPAY_TMN_CODE: ${VNPAY_TMN_CODE:-}
+      VNPAY_HASH_SECRET: ${VNPAY_HASH_SECRET:-}
+      MOMO_PARTNER_CODE: ${MOMO_PARTNER_CODE:-}
+      MOMO_ACCESS_KEY: ${MOMO_ACCESS_KEY:-}
+      MOMO_SECRET_KEY: ${MOMO_SECRET_KEY:-}
+      # Địa chỉ cổng: bỏ trống thì dùng sandbox thật; E2E trỏ sang cổng giả trong compose của test
+      VNPAY_PAY_URL: ${VNPAY_PAY_URL:-}
+      VNPAY_API_URL: ${VNPAY_API_URL:-}
+      MOMO_ENDPOINT: ${MOMO_ENDPOINT:-}
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:4000}
+      RUN_MIGRATIONS: "true"
+      RUN_SEED: "true"
+    ports:
+      - "4000:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: apps/web
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
 
 volumes:
   db_data:

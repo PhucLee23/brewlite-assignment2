@@ -1,0 +1,119 @@
+# CD: Push/Tag → Lint và Test → Build → Docker Image → Push Registry → Migrate → Deploy → Smoke Test (ADR-009)
+# Secret cần có: DATABASE_URL, RENDER_DEPLOY_HOOK_API, VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID
+# Biến (Variables) cần có: API_URL, WEB_URL – URL production dùng cho smoke test
+name: CD
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+concurrency:
+  group: cd-production
+  cancel-in-progress: false
+
+jobs:
+  quality:
+    name: Quality gate (lint, test, build)
+    uses: ./.github/workflows/ci.yml
+
+  images:
+    name: Build và push image lên GHCR
+    needs: quality
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      api: ${{ steps.tags.outputs.api }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tên image (GHCR yêu cầu chữ thường), tag bằng commit SHA
+        id: tags
+        run: |
+          owner=$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')
+          echo "api=ghcr.io/${owner}/brewlite-api:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "owner=${owner}" >> "$GITHUB_OUTPUT"
+      - name: Đăng nhập GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+      - name: Build và push image API
+        run: |
+          docker build --build-arg APP_VERSION=${GITHUB_SHA} -t "${{ steps.tags.outputs.api }}" apps/api
+          docker push "${{ steps.tags.outputs.api }}"
+      - name: Gắn thêm tag phiên bản khi phát hành (vX.Y.Z)
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          dst="ghcr.io/${{ steps.tags.outputs.owner }}/brewlite-api:${GITHUB_REF_NAME}"
+          docker tag "${{ steps.tags.outputs.api }}" "$dst" && docker push "$dst"
+
+  migrate:
+    name: Migrate CSDL production (Neon)
+    needs: images
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/api
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/api/package-lock.json
+      - run: npm ci
+      # Chỉ áp migration chưa chạy, không xóa dữ liệu (ADR-003); seed dùng upsert, không ghi đè tồn kho
+      - name: prisma migrate deploy
+        run: npx prisma migrate deploy
+      - name: Seed dữ liệu menu
+        run: npx prisma db seed
+
+  deploy:
+    name: Deploy Render (API) và Vercel (web)
+    needs: [images, migrate]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy API bằng deploy hook, chỉ định image vừa push
+        env:
+          HOOK_API: ${{ secrets.RENDER_DEPLOY_HOOK_API }}
+        run: |
+          enc() { jq -rn --arg v "$1" '$v|@uri'; }
+          curl -fsS -X POST "${HOOK_API}&imgURL=$(enc '${{ needs.images.outputs.api }}')" > /dev/null
+          echo "Đã gọi deploy hook cho ${GITHUB_SHA}"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Deploy web lên Vercel (production)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: npx --yes vercel@62.7.0 deploy --prod --yes --token "$VERCEL_TOKEN" > vercel-url.txt
+
+  smoke:
+    name: Smoke test production
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      # SMK-01: API production trả 200 và đã chạy đúng phiên bản vừa deploy (Render có thể đang ngủ, chờ tối đa ~6 phút)
+      - name: SMK-01 GET /health của API
+        run: |
+          for i in $(seq 1 36); do
+            body=$(curl -fsS --max-time 20 "${{ vars.API_URL }}/health" || true)
+            echo "$body" | grep -q "\"version\":\"${GITHUB_SHA}\"" && { echo "$body"; exit 0; }
+            sleep 10
+          done
+          echo "API chưa chạy phiên bản ${GITHUB_SHA}" && exit 1
+      # SMK-03: API production đọc được menu từ CSDL Neon
+      - name: SMK-03 GET /products của API
+        run: curl -fsS --max-time 30 "${{ vars.API_URL }}/products" | grep -q '"name"'
+      # SMK-02: trang chủ web production trả 200
+      - name: SMK-02 trang chủ web
+        run: curl -fsS --max-time 30 -o /dev/null -w "%{http_code}\n" "${{ vars.WEB_URL }}/"
+      - name: Hướng dẫn rollback khi smoke test thất bại
+        if: failure()
+        run: |
+          echo "::error::Smoke test thất bại. Rollback: chạy workflow 'Rollback' với commit SHA của bản ổn định trước (docs/deployment.md)."

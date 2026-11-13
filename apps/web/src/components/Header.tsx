@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { AccountMenu } from './AccountMenu';
-import { CartLink } from './CartLink';
-import { NavLink } from './NavLink';
+import { ShopLinks } from './ShopLinks';
 
 // Header mobile-first: dính trên cùng, nút đủ lớn cho ngón tay; ở khổ 375 px chỉ hiện biểu tượng thương hiệu (NFR-08)
 export function Header() {
@@ -15,8 +14,7 @@ export function Header() {
           <span className="hidden sm:inline">BrewLite</span>
         </Link>
         <div className="flex items-center gap-1 whitespace-nowrap text-sm sm:gap-3">
-          <NavLink href="/">Menu</NavLink>
-          <CartLink />
+          <ShopLinks />
           <AccountMenu />
         </div>
       </nav>

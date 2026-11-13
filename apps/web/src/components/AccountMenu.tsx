@@ -32,6 +32,7 @@ export function AccountMenu() {
         Đơn hàng
       </NavLink>
       {user.role === 'STAFF' && <NavLink href="/staff">Quầy</NavLink>}
+      {user.role === 'STAFF' && <NavLink href="/admin/revenue">Doanh thu</NavLink>}
       <div className="flex items-center gap-2 sm:ml-1 sm:border-l sm:border-latte sm:pl-3">
         <span className="hidden text-right leading-tight sm:block">
           <span className="block font-medium">{user.fullName}</span>

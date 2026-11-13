@@ -1,0 +1,13 @@
+{
+  "name": "brewlite-e2e",
+  "version": "0.1.0",
+  "private": true,
+  "description": "E2E test BrewLite bằng Playwright: Menu → giỏ → đăng nhập → cổng VNPay → xác nhận đơn",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "^22.18.0"
+  }
+}

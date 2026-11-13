@@ -1,11 +1,16 @@
 import type { Metadata, Viewport } from 'next';
 import { Header } from '@/components/Header';
+import { PwaRegister } from '@/components/PwaRegister';
 import './globals.css';
 import { Providers } from './providers';
 
 export const metadata: Metadata = {
   title: 'BrewLite – Đặt cà phê không tiền mặt',
   description: 'Chọn đồ uống, thanh toán không tiền mặt và nhận nước tại quầy.',
+  // PWA: cài lên màn hình chính điện thoại (NFR-09)
+  manifest: '/manifest.webmanifest',
+  icons: { icon: '/icons/icon-192.png', apple: '/icons/apple-touch-icon.png' },
+  appleWebApp: { capable: true, title: 'BrewLite', statusBarStyle: 'default' },
 };
 
 export const viewport: Viewport = {
@@ -32,6 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Header />
           <main className="mx-auto w-full max-w-5xl px-4 pb-16 pt-6">{children}</main>
         </Providers>
+        <PwaRegister />
       </body>
     </html>
   );

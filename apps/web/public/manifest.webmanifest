@@ -1,0 +1,16 @@
+{
+  "name": "BrewLite – Đặt cà phê không tiền mặt",
+  "short_name": "BrewLite",
+  "description": "Chọn đồ uống, thanh toán không tiền mặt và nhận nước tại quầy.",
+  "lang": "vi",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#fbf7f1",
+  "theme_color": "#3b2416",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

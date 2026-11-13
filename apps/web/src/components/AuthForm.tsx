@@ -48,7 +48,8 @@ export function AuthForm({ mode }: Props) {
       const body = mode === 'login' ? { email, password } : { email, password, fullName };
       const res = await api<{ accessToken: string; user: SessionUser }>(`/auth/${mode}`, { method: 'POST', body });
       setSession(res.accessToken, res.user);
-      router.replace(next);
+      // Nhân viên quầy đăng nhập từ trang chủ thì vào thẳng màn hình quầy
+      router.replace(res.user.role === 'STAFF' && next === '/' ? '/staff' : next);
     } catch (err) {
       setError((err as Error).message);
       setSubmitting(false);

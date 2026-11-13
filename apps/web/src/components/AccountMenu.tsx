@@ -27,7 +27,11 @@ export function AccountMenu() {
   }
   return (
     <>
-      <NavLink href="/orders">Đơn hàng</NavLink>
+      {/* Nhân viên cũng mua được nên vẫn có Đơn hàng; khổ điện thoại không đủ chỗ thì nhân viên chỉ thấy Quầy */}
+      <NavLink href="/orders" className={user.role === 'STAFF' ? 'hidden sm:inline' : ''}>
+        Đơn hàng
+      </NavLink>
+      {user.role === 'STAFF' && <NavLink href="/staff">Quầy</NavLink>}
       <div className="flex items-center gap-2 sm:ml-1 sm:border-l sm:border-latte sm:pl-3">
         <span className="hidden text-right leading-tight sm:block">
           <span className="block font-medium">{user.fullName}</span>

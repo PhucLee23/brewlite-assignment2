@@ -88,7 +88,7 @@ Secret chỉ nằm trong GitHub Secrets và trang cấu hình Render, Vercel; wo
 
 ## 4. Pipeline
 
-**CI** (`.github/workflows/ci.yml`) chạy trên mọi pull request vào `main`: job `api` (lint → unit test → build → integration test), `web` (lint → typecheck → component test → build). Chỉ merge khi mọi job xanh và có approve.
+**CI** (`.github/workflows/ci.yml`) chạy trên mọi pull request vào `main`: job `api` (lint → unit test → build → integration test), `web` (lint → typecheck → component test → build), `e2e` (dựng API, web, PostgreSQL và cổng VNPay giả `tests/e2e/mock-vnpay` rồi chạy Playwright ở khổ 375 px). Chỉ merge khi mọi job xanh và có approve.
 
 **CD** (`.github/workflows/cd.yml`) chạy khi merge vào `main` hoặc đẩy tag `v*`:
 

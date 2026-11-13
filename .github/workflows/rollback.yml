@@ -1,0 +1,36 @@
+# Rollback API về image của một commit đã deploy trước đó (NFR-10: ≤ 10 phút).
+# Chạy: Actions → Rollback → Run workflow → nhập commit SHA của bản ổn định.
+name: Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Commit SHA của bản ổn định (tag image trên GHCR)
+        required: true
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kiểm tra định dạng SHA
+        env:
+          SHA: ${{ inputs.sha }}
+        run: echo "$SHA" | grep -Eq '^[0-9a-f]{40}$' || { echo "SHA phải đủ 40 ký tự hex"; exit 1; }
+      - name: Gọi deploy hook với image cũ
+        env:
+          SHA: ${{ inputs.sha }}
+          HOOK_API: ${{ secrets.RENDER_DEPLOY_HOOK_API }}
+        run: |
+          owner=$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')
+          enc() { jq -rn --arg v "$1" '$v|@uri'; }
+          curl -fsS -X POST "${HOOK_API}&imgURL=$(enc "ghcr.io/${owner}/brewlite-api:${SHA}")" > /dev/null
+      - name: Chờ API chạy lại phiên bản cũ
+        env:
+          SHA: ${{ inputs.sha }}
+        run: |
+          for i in $(seq 1 36); do
+            curl -fsS --max-time 20 "${{ vars.API_URL }}/health" | grep -q "\"version\":\"${SHA}\"" && { echo "Đã rollback về ${SHA}"; exit 0; }
+            sleep 10
+          done
+          exit 1

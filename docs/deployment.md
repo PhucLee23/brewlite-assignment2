@@ -29,35 +29,53 @@ docker compose up -d --build  # db, api, web
 
 ### 3.1 Neon (PostgreSQL)
 
-1. Tạo project ở vùng `ap-southeast-1`, lấy chuỗi kết nối dạng `postgresql://…?sslmode=require`.
-2. Lưu chuỗi kết nối vào GitHub Secret `DATABASE_URL` và biến môi trường `DATABASE_URL` của service `brewlite-api`. Không đưa chuỗi này vào frontend hay repository.
+1. Tạo project ở vùng `ap-southeast-1` (Singapore, cùng vùng với Render), Postgres 16.
+2. Ở hộp *Connect*, tắt *Connection pooling* để lấy chuỗi kết nối **direct** dạng `postgresql://…?sslmode=require`: `prisma migrate deploy` cần kết nối trực tiếp, không chạy ổn qua pooler.
+3. Lưu chuỗi kết nối vào GitHub Secret `DATABASE_URL` và biến môi trường `DATABASE_URL` của service `brewlite-api`. Không đưa chuỗi này vào frontend hay repository.
 
-### 3.2 Render (API)
+### 3.2 Image đầu tiên trên GHCR
+
+Render chỉ tạo được service khi image đã có trên registry, còn CD chỉ đẩy image sau lần merge đầu tiên, nên image đầu tiên đẩy từ máy cá nhân (token GitHub có quyền `write:packages`):
+
+```bash
+docker build --build-arg APP_VERSION=<sha> \
+  --label org.opencontainers.image.source=https://github.com/<owner>/<repo> \
+  -t ghcr.io/<owner>/brewlite-api:<sha> apps/api
+docker push ghcr.io/<owner>/brewlite-api:<sha>
+```
+
+Sau đó vào trang package `brewlite-api` trên GitHub → *Package settings*:
+
+- *Manage Actions access*: thêm repository này với quyền **Write**, để workflow CD đẩy được image mới.
+- *Change visibility* → **Public**: Render kéo image không cần credential. Image không chứa secret; secret chỉ nhập ở Render lúc chạy.
+
+### 3.3 Render (API)
 
 Tạo 1 **Web Service** loại *Existing image*, vùng Singapore, gói Free:
 
 | Service | Image | Biến môi trường | Health check path |
 | --- | --- | --- | --- |
-| `brewlite-api` | `ghcr.io/<owner>/brewlite-api:<sha>` | `DATABASE_URL`, `JWT_SECRET`, `FRONTEND_URL` (URL Vercel), `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET`, `PUBLIC_API_URL` (URL của chính `brewlite-api`, để MoMo gọi IPN) | `/health` |
+| `brewlite-api` | `ghcr.io/<owner>/brewlite-api:<sha>` | `DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `FRONTEND_URL` (URL Vercel, thêm `http://localhost:3000` cách nhau bằng dấu phẩy nếu cần), `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET`, `PUBLIC_API_URL` (URL của chính `brewlite-api`, để MoMo gọi IPN) | `/health` |
 
-- Image trên GHCR của repository private cần credential: ở Render thêm *Registry Credential* (GitHub username + Personal Access Token quyền `read:packages`).
-- Lấy *Deploy Hook* của service, lưu vào GitHub Secret `RENDER_DEPLOY_HOOK_API`.
-- `JWT_SECRET`: chuỗi ngẫu nhiên dài (ví dụ `openssl rand -hex 32`).
+- Nếu để package GHCR ở chế độ private thì phải thêm *Registry Credential* (GitHub username + Personal Access Token quyền `read:packages`).
+- `JWT_SECRET`: chuỗi ngẫu nhiên dài (nút *Generate* của Render, hoặc `openssl rand -hex 32`).
+- Lấy *Deploy Hook* của service (*Settings → Deploy Hook*), lưu vào GitHub Secret `RENDER_DEPLOY_HOOK_API`.
+- CSDL Neon còn trống cho tới lần chạy CD đầu tiên (job `migrate` tạo bảng và seed), nên trước đó `GET /products` trả 500 là bình thường.
 
-### 3.3 Cổng thanh toán sandbox
+### 3.4 Cổng thanh toán sandbox
 
 1. **VNPay:** đăng ký merchant tại https://sandbox.vnpayment.vn/devreg để nhận mã website (`vnp_TmnCode`) và chuỗi bí mật (`vnp_HashSecret`). Cả nhóm dùng chung một bộ khóa; khóa chỉ nằm trong `.env` của từng máy và biến môi trường của Render, không commit.
-2. Trên trang quản lý merchant sandbox, đặt **IPN URL** = `<URL API>/payments/vnpay/ipn`.
+2. **IPN của VNPay:** trang quản lý merchant sandbox không có ô tự cấu hình IPN URL; muốn nhận IPN thì gửi yêu cầu cho VNPay với địa chỉ `<URL API>/payments/vnpay/ipn`. Khi chưa có IPN, API vẫn xác nhận thanh toán qua link quay về (`POST /payments/:id/return`) và API tra cứu giao dịch của cổng.
 3. **MoMo:** dùng bộ khóa test công khai của MoMo (mặc định trong code), IPN đi tới `<PUBLIC_API_URL>/payments/momo/ipn`.
 
-### 3.4 Vercel (web)
+### 3.5 Vercel (web)
 
-1. Import repository, **Root Directory** = `apps/web`, framework Next.js.
+1. Import repository, chọn *Import single project* cho `apps/web` (không chọn `apps/api`): **Root Directory** = `apps/web`, framework Next.js.
 2. Biến môi trường `NEXT_PUBLIC_API_URL` = URL của `brewlite-api`.
-3. Tắt tự deploy theo Git (pipeline CD deploy bằng Vercel CLI): *Settings → Git → Ignored Build Step* trả về `exit 0`.
-4. Tạo token, lưu GitHub Secret `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` (lấy trong `.vercel/project.json` sau khi chạy `vercel link`).
+3. Sau lần deploy đầu tiên, ngắt kết nối Git (*Settings → Git → Disconnect*): từ đó web chỉ được deploy bởi pipeline CD bằng Vercel CLI, sau khi CI đã qua.
+4. Lưu GitHub Secret `VERCEL_ORG_ID` (*Team Settings → General → Team ID*), `VERCEL_PROJECT_ID` (*Project Settings → General → Project ID*) và `VERCEL_TOKEN` (*Account Settings → Tokens*, scope tài khoản).
 
-### 3.5 GitHub
+### 3.6 GitHub
 
 | Loại | Tên | Giá trị |
 | --- | --- | --- |

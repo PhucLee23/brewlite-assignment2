@@ -14,7 +14,7 @@ Bản phát hành đầu tiên của BrewLite: hoàn thành luồng nghiệp v�
 | Tài khoản | Đăng ký, đăng nhập JWT, quay lại trang đang xem sau khi đăng nhập, tự đăng xuất khi hết hạn | FR-06, FR-07 |
 | Đặt đơn | Giá do server tính, trừ nguyên liệu theo công thức trong transaction (optimistic locking), mã giảm giá, chống tạo đơn trùng | FR-08 – FR-10 |
 | Thanh toán | Qua cổng MoMo hoặc VNPay (sandbox): chuyển sang trang của cổng, xác nhận bằng kết quả có chữ ký (link quay về, IPN, API tra cứu), thanh toán idempotent, phiên hết hạn sau 15 phút, thanh toán lại, biên lai | FR-11, FR-12, FR-26 |
-| Điểm thưởng | Cộng 1 điểm / 1.000đ khi thanh toán thành công, thu hồi khi hủy đơn đã thanh toán, lịch sử điểm | FR-13, FR-21 |
+| Điểm thưởng | Cộng 1 điểm / 1.000đ khi thanh toán thành công, thu hồi khi hủy đơn đã thanh toán; API `GET /loyalty/me` đã có, màn hình lịch sử điểm để phiên bản sau | FR-13, FR-21 |
 | Theo dõi đơn | Màn hình xác nhận, lịch sử và chi tiết đơn, hủy đơn trả nguyên liệu, tự hủy đơn chưa thanh toán quá 15 phút | FR-14 – FR-16, FR-20 |
 | Quầy pha chế | Nhân viên xem đơn theo 5 nhóm (chờ pha, đang pha, sẵn sàng, đã giao, đã hủy), chuyển PREPARING → READY → COMPLETED, hủy đơn đã thanh toán chưa pha | FR-17 – FR-19 |
 | Kho | Tồn từng nguyên liệu, số ly còn bán được của từng món và nguyên liệu hết trước, nhập thêm hàng | FR-24 |

@@ -45,7 +45,7 @@ Liên kết mỗi yêu cầu trong [SRS](requirements/srs.md) với use-case, th
 | FR-17 | UC-10 Cập nhật trạng thái | Activity-02, Class-01, ADR-006 | `transitionOrder`, state machine | UT-03 ✅, API-T11 ✅ |
 | FR-18 | UC-10 | Activity-02, ADR-005 | `PATCH /orders/:id/status` (STAFF) | API-T11 ✅ |
 | FR-19 | UC-10 | Activity-02, Impl-01 | `GET /orders?status=`, `GET /orders/counts` (STAFF); trang `/staff` | API-T11 ✅, E2E-T03 ✅ |
-| FR-20 | UC-11 Tự hủy đơn quá hạn | Activity-03, DataFlow-01 | tác vụ định kỳ `releaseExpiredOrders` | API-T12 ✅ |
+| FR-20 | UC-11 Tự hủy đơn quá hạn | Activity-03, DataFlow-01, ADR-011 | tác vụ định kỳ `releaseExpiredOrders` (trả nguyên liệu) | API-T12 ✅ |
 | FR-21 | UC-12 Xem lịch sử điểm | Class-01 | `GET /loyalty/me` (API; chưa có màn hình) | API-T08 ✅ |
 | FR-22 | UC-08 | – | trang `/orders/[id]` tự cập nhật, báo "Nước của bạn đã sẵn sàng" khi đang mở | (Could, thông báo đẩy chưa làm) |
 | FR-23 | – | – | Won't | – |
@@ -61,14 +61,14 @@ Liên kết mỗi yêu cầu trong [SRS](requirements/srs.md) với use-case, th
 | NFR-02 | Sequence-01 | Transaction ngắn; `POST /payments` chỉ mở phiên ở cổng, không chờ khách trả | Đo thời gian trong API-T06 ✅ |
 | NFR-03 | ADR-005 | bcrypt, JWT secret từ env | API-T02 ✅ |
 | NFR-04 | ADR-002, ADR-005, ADR-010, Impl-01 | `ValidationPipe` whitelist, giá server, `RolesGuard`, chữ ký HMAC-SHA512 (VNPay), HMAC-SHA256 (MoMo) cho link và kết quả, tra cứu lại cổng | UT-06 ✅, API-T03 ✅, API-T09 ✅, API-T11 ✅, API-T15 ✅ |
-| NFR-05 | Deploy-01, ADR-008 | HTTPS, CORS, GitHub Secrets, khóa VNPay chỉ ở biến môi trường, `sslmode=require` | Kiểm tra cấu hình khi deploy ⏳, SMK-01 (CD), SMK-03 (CD) |
-| NFR-06 | Sequence-01, ADR-006 | Optimistic locking, khóa dòng, UNIQUE | API-T04 ✅, API-T07 ✅ |
-| NFR-07 | Deploy-01, architecture §3.5 | `GET /health` của API, health check của Render | API-T14 ✅, SMK-01 (CD), SMK-03 (CD) |
+| NFR-05 | Deploy-01, ADR-008, ADR-010 | HTTPS, CORS, GitHub Secrets, khóa VNPay chỉ ở biến môi trường, `sslmode=require` | Kiểm tra cấu hình khi deploy ✅, SMK-01 (CD) ✅, SMK-03 (CD) ✅ |
+| NFR-06 | Sequence-01, ADR-006, ADR-011 | Optimistic locking, khóa dòng trên nguyên liệu, UNIQUE | API-T04 ✅, API-T07 ✅, API-T17 ✅ |
+| NFR-07 | Deploy-01, architecture §3.5 | `GET /health` của API, health check của Render | API-T14 ✅, SMK-01 (CD) ✅, SMK-03 (CD) ✅ |
 | NFR-08 | ADR-004 | Tailwind mobile-first, trạng thái tải/trống/lỗi | CT-01 ✅, E2E-T01 ở khổ 375 px ✅ |
 | NFR-09 | ADR-004 | Manifest, service worker | Kiểm thử thủ công trên điện thoại ⏳ |
-| NFR-10 | Deploy-01, ADR-009 | Docker Compose, Prisma migration, pipeline CD | Pipeline CD (`.github/workflows/cd.yml`) ⏳ |
+| NFR-10 | Deploy-01, ADR-009 | Docker Compose, Prisma migration, pipeline CD | Pipeline CD (`.github/workflows/cd.yml`) ✅ |
 | NFR-11 | ADR-009 | CI trên pull request; quy tắc chỉ merge khi CI xanh và có approve | Pipeline CI (`.github/workflows/ci.yml`), lịch sử pull request ✅ |
-| NFR-12 | architecture §3.4 | Middleware log JSON | Xem log Render ⏳ |
+| NFR-12 | architecture §3.4 | Middleware log JSON | Xem log Render ✅ |
 | NFR-13 | ADR-004 | Next.js build cho trình duyệt hiện đại | E2E-T01 trên Chromium ✅, kiểm thử thủ công Safari iOS ⏳ |
 
 ## 4. Danh mục test dự kiến
@@ -128,4 +128,4 @@ Liên kết mỗi yêu cầu trong [SRS](requirements/srs.md) với use-case, th
 | PWA | `apps/web/public/manifest.webmanifest`, `sw.js`, `offline.html` | Kiểm thử thủ công trên điện thoại |
 | Triển khai | `apps/*/Dockerfile`, `docker-compose.yml`, `.github/workflows/` | SMK-01 – SMK-03 trong pipeline CD |
 
-Mục còn ⏳ được kiểm chứng trên production sau lần deploy đầu tiên.
+Các mục còn ⏳ là những nội dung chưa được kiểm chứng hoàn tất, sẽ tiếp tục được xác nhận trong các đợt kiểm thử tương ứng.

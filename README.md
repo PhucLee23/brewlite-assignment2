@@ -233,25 +233,91 @@ Chi tiết thiết lập production, secret và các bước rollback: [docs/dep
 ## Cấu trúc repository
 
 ```
-apps/web/              Next.js (mobile-first, PWA)
-apps/api/              NestJS + Prisma (migration, seed trong prisma/)
-docs/                  requirements/, diagrams/, architecture/, process/, scrum/, deployment.md
-tests/integration/     integration test API (API-Txx)
-tests/e2e/             end-to-end test Playwright (E2E-Txx), cổng VNPay giả mock-vnpay/
-.github/workflows/     CI, CD, rollback
-docker-compose.yml     web + API + PostgreSQL ở local
+brewlite-assignment2/
+├── apps/
+│   ├── api/                                NestJS API, cổng 4000
+│   │   ├── prisma/
+│   │   │   ├── schema.prisma               12 bảng: món, topping, nguyên liệu, công thức, đơn, thanh toán, điểm thưởng…
+│   │   │   ├── migrations/                 migration tạo CSDL theo từng module
+│   │   │   └── seed.ts                     dữ liệu mẫu: 15 món, topping, 21 nguyên liệu, mã giảm giá, tài khoản
+│   │   ├── src/
+│   │   │   ├── main.ts, app.setup.ts       khởi động, ValidationPipe, CORS, bộ lọc lỗi
+│   │   │   ├── health/                     GET /health: API và CSDL đang chạy
+│   │   │   ├── auth/                       đăng ký, đăng nhập bcrypt + JWT, JwtAuthGuard, RolesGuard
+│   │   │   ├── products/                   GET /products, /products/:id; pricing.ts tính giá theo size, topping
+│   │   │   ├── promotions/                 GET /promotions/:code, quy tắc mã giảm giá
+│   │   │   ├── orders/
+│   │   │   │   ├── orders.service.ts       tạo đơn PENDING, giá do server tính, xem đơn, danh sách cho Quầy
+│   │   │   │   ├── order-state-machine.ts  sơ đồ chuyển trạng thái đơn
+│   │   │   │   ├── order-transitions.ts    cách duy nhất để đổi trạng thái (cập nhật có điều kiện)
+│   │   │   │   ├── order-lifecycle.service.ts  hủy đơn, tự hủy đơn quá hạn, Quầy cập nhật trạng thái
+│   │   │   │   └── lock-order.ts           khóa dòng đơn khi thanh toán và hủy
+│   │   │   ├── payments/
+│   │   │   │   ├── payments.service.ts     POST /payments idempotent, xác nhận kết quả, IPN, biên lai, doanh thu
+│   │   │   │   ├── payment-session.ts      hạn phiên thanh toán 15 phút
+│   │   │   │   └── gateways/               momo.ts, vnpay.ts: tạo giao dịch và kiểm chữ ký cổng sandbox
+│   │   │   ├── ingredients/                trừ nguyên liệu bằng optimistic locking, API Kho, nhập hàng
+│   │   │   ├── loyalty/                    cộng, thu hồi điểm thưởng; GET /loyalty/me
+│   │   │   ├── common/                     Idempotency-Key, log JSON, kiểm tra biến môi trường, lỗi tiếng Việt
+│   │   │   └── prisma/                     PrismaService
+│   │   └── Dockerfile
+│   └── web/                                Next.js, cổng 3000
+│       ├── public/
+│       │   ├── images/                     ảnh 15 món
+│       │   ├── icons/, manifest.webmanifest  biểu tượng và manifest PWA
+│       │   └── sw.js, offline.html         service worker, trang khi mất mạng
+│       ├── src/
+│       │   ├── app/
+│       │   │   ├── page.tsx                Menu
+│       │   │   ├── products/[id]/          Chi tiết món, chọn size và topping
+│       │   │   ├── cart/                   Giỏ hàng
+│       │   │   ├── login/, register/       Đăng nhập, Đăng ký
+│       │   │   ├── checkout/               Thanh toán: mã giảm giá, chọn MoMo hoặc VNPay
+│       │   │   ├── payments/[id]/          chờ kết quả từ cổng; receipt/ là trang biên lai
+│       │   │   ├── orders/                 Lịch sử đơn; [id]/ là màn hình xác nhận và chi tiết đơn
+│       │   │   ├── staff/                  Quầy của nhân viên
+│       │   │   ├── admin/ingredients/      Kho
+│       │   │   ├── admin/revenue/          Doanh thu
+│       │   │   └── not-found.tsx, error.tsx  trang 404, trang lỗi
+│       │   ├── components/                 Header, ProductCard, AuthForm, PaymentForm, StateViews…
+│       │   ├── store/                      cart.ts, auth.ts: Zustand lưu giỏ hàng và phiên đăng nhập
+│       │   └── lib/                        api.ts gọi API và báo lỗi tiếng Việt, payment.ts, order-status.tsx
+│       ├── Dockerfile
+│       └── .env.example
+├── tests/
+│   ├── integration/                        integration test API trên PostgreSQL thật (API-T01 – API-T17)
+│   │   └── support/                        dựng app, CSDL test, cổng MoMo, VNPay giả
+│   └── e2e/                                Playwright (E2E-T01 – E2E-T04)
+│       ├── specs/                          checkout.spec.ts, staff.spec.ts
+│       ├── mock-vnpay/                     cổng VNPay giả cho E2E
+│       └── docker-compose.e2e.yml          chạy stack nối với cổng giả
+├── docs/
+│   ├── requirements/                       bối cảnh, SRS, đặc tả UC-06, sơ đồ use-case
+│   ├── diagrams/                           activity, sequence, class, luồng dữ liệu
+│   ├── architecture/                       kiến trúc, C4, deployment, implementation, adr/ (ADR-001 – ADR-011)
+│   ├── process/                            Definition of Done, quy trình Git
+│   ├── scrum/                              Product Backlog, Sprint 1–2, Review, Retrospective
+│   ├── traceability-matrix.md              ma trận truy vết yêu cầu → thiết kế → code → test
+│   ├── deployment.md                       thiết lập production, secret, rollback
+│   └── release-notes.md                    ghi chú phát hành v1.0.0
+├── .github/
+│   ├── workflows/                          ci.yml, cd.yml, rollback.yml
+│   ├── pull_request_template.md            mẫu Pull Request
+│   └── ISSUE_TEMPLATE/                     mẫu user story
+├── .env.example                            biến môi trường cho Docker Compose và API
+└── docker-compose.yml                      db + api + web
 ```
 
 ## Nhóm phát triển
 
-| Thành viên | Vai trò Scrum | Mảng chính |
-| --- | --- | --- |
-| TV1 | Scrum Master | Quy trình, kiến trúc, CI, xác thực, mã giảm giá, Docker |
-| TV2 | Product Owner | Yêu cầu, backlog, kiểm thử nghiệm thu, điểm thưởng, màn hình quầy |
-| TV3 | Developer | Backend: CSDL, sản phẩm, nguyên liệu và kho, xem và hủy đơn; E2E |
-| TV4 | Developer | Backend: tạo đơn, thanh toán qua cổng MoMo, VNPay, CD và production |
-| TV5 | Developer | Frontend lead: khung web, menu, chi tiết món, đăng nhập, lịch sử đơn, API doanh thu |
-| TV6 | Developer | Frontend: giỏ hàng, thanh toán, doanh thu, kho, PWA |
+| Thành viên | Họ và tên | GitHub | Vai trò Scrum | Mảng chính |
+| --- | --- | --- | --- | --- |
+| TV1 | Phạm Tuyết Nhi | [phamtuyetnhi756-droid](https://github.com/phamtuyetnhi756-droid) | Scrum Master, Developer | Quy trình, kiến trúc, CI, xác thực, mã giảm giá, Docker |
+| TV2 | Lê Trương Thảo My | [M-y-n-e](https://github.com/M-y-n-e) | Product Owner, Developer | Yêu cầu, backlog, kiểm thử nghiệm thu, điểm thưởng, màn hình quầy |
+| TV3 | Lý Ngọc Uyên Phương | [uly2869-collab](https://github.com/uly2869-collab) | Developer | Backend: CSDL, sản phẩm, nguyên liệu và kho, xem và hủy đơn; E2E |
+| TV4 | Lê Ngọc Phúc | [PhucLee23](https://github.com/PhucLee23) | Developer | Backend: tạo đơn, thanh toán qua cổng MoMo, VNPay, CD và production |
+| TV5 | Nguyễn Lê Bảo Yến Vy | [nlbyv2107-del](https://github.com/nlbyv2107-del) | Developer | Frontend lead: khung web, menu, chi tiết món, đăng nhập, lịch sử đơn, API doanh thu |
+| TV6 | Mai Thu Hường | [LauraaMao](https://github.com/LauraaMao) | Developer | Frontend: giỏ hàng, thanh toán, doanh thu, kho, PWA |
 
 ### Phân công tài liệu Task 1–3
 

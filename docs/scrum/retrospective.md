@@ -38,42 +38,43 @@ Biên bản họp nhìn lại cuối mỗi Sprint, do Scrum Master (TV1) điều
 
 ## Sprint 2
 
-*Số liệu Sprint:* 18 hạng mục backlog (US-02 – US-13, TK-07 – TK-10); test tự động: 6 nhóm unit test (UT-01 – UT-06), 17 integration test API (API-T01 – API-T17), 3 component test (CT-01 – CT-03), 4 E2E test (E2E-T01 – E2E-T04) chạy trong CI.
+*Số liệu Sprint:* 23 hạng mục backlog (US-02 – US-13, US-16, TK-07 – TK-10), 23 pull request đã merge. Test tự động chạy trong CI: unit test API 33 (6 nhóm), integration test API 73 (10 nhóm), component test web 15 (4 nhóm), E2E 5 (E2E-T01 – E2E-T04). Pipeline CD deploy lên production sau mỗi lần merge vào `main`.
 
 ### Kiểm tra hành động cải tiến của Sprint 1
 
 | Hành động | Kết quả |
 | --- | --- |
-| Tạo Project board và Issue cho từng user story Sprint 2; mô tả pull request ghi Closes #<số issue> (TV2) | Chưa đạt: 43 PR đã merge chưa liên kết Issue (tính cả PR Sprint 1 và PR sửa tài liệu) |
-| Trước khi mở PR, đối chiếu tab Files changed với danh sách tệp, đọc lại tiêu đề và mô tả (TV1) | Chưa đạt: PR42 (#99, README và Retrospective) bị yêu cầu sửa 6 mục sau khi mở (ghi đè Retrospective Sprint 1, bảng còn trống, số liệu test lệch, README còn `<WEB_URL>`, tiêu đề PR, thứ tự merge) |
-| Người review phản hồi trong 24 giờ; chỉ merge khi người review được giao đã Approve; merge xong xóa nhánh (TV1) | Chưa đạt: còn 22 nhánh Sprint 2 đã merge chưa xóa (`feat/5-*`, `ci/5-*`, `test/5-e2e`, `docs/5-sprint-review`), cùng các nhánh Task 1 – 4 chưa dọn |
+| Project board và Issue cho từng user story; mô tả PR ghi `Closes #<số issue>` | Đạt: 23/23 PR đã merge của Sprint 2 liên kết với Issue, board chuyển cột theo trạng thái PR |
+| Đối chiếu Files changed, tiêu đề và mô tả trước khi mở PR (mục tiêu 0 PR phải sửa lại) | Chưa đạt: 4 PR phải sửa sau khi mở (#87 đóng rồi mở lại thành #88; #97, #98, #99 nhận Request changes); 2 PR để tiêu đề GitHub tự đặt theo tên nhánh |
+| Phản hồi review trong 24 giờ; chỉ merge khi người review được giao đã Approve; merge xong xóa nhánh | Đạt một phần: mọi PR có phản hồi đầu tiên trong vòng 7 giờ và branch protection bắt buộc có Approve; nhưng 7 PR được merge với Approve của thành viên khác khi người review được giao chưa xem; nhóm thống nhất giữ nhánh tới khi kết thúc dự án để đối chiếu |
 
 ### Điều làm tốt (giữ lại)
 
 | Ý kiến | Người nêu |
 | --- | --- |
-| Docker Compose chạy web, API và PostgreSQL bằng một lệnh; API tự áp migration và nạp dữ liệu mẫu khi khởi động | TV1 |
-| Ma trận truy vết cập nhật theo từng mã test (UT, API-T, CT, E2E) nên đối chiếu yêu cầu với kết quả test nhanh | TV2 |
-| Integration test chạy trên PostgreSQL thật, cổng MoMo và VNPay giả không gọi Internet nên test ổn định, chạy được cả ở máy cá nhân và trên CI | TV3 |
-| Tạo đơn tính giá ở server, trừ nguyên liệu bằng optimistic locking và Idempotency-Key nên gọi lặp không làm trừ kho trùng | TV4 |
-| Khung web có sẵn từ Sprint 1 (header, React Query, trạng thái đang tải, trống, lỗi) nên các trang đăng nhập, lịch sử đơn, chi tiết món làm nhanh | TV5 |
-| Giỏ hàng chặn vượt tồn kho (CT-03) và PWA có trang mất mạng, người dùng không bị mất thao tác khi mạng yếu | TV6 |
+| Docker Compose chạy cả web, API, PostgreSQL bằng một lệnh; CI chặn merge khi một trong ba job API, Web, E2E đỏ hoặc chưa có Approve | TV1 |
+| Mọi PR Sprint 2 đều gắn Issue, nhìn board là biết user story nào xong, user story nào còn chờ review | TV2 |
+| Integration test chạy trên PostgreSQL thật với cổng MoMo, VNPay giả; E2E có cổng VNPay giả nên chạy được trong CI mà không cần Internet | TV3 |
+| Đơn chỉ sang PAID khi có kết quả có chữ ký của cổng; CD tự migrate, deploy, smoke test và có workflow rollback | TV4 |
+| Các trang Sprint 2 dùng lại khung trạng thái đang tải, trống, lỗi và store của Sprint 1 nên làm nhanh, ít lỗi giao diện | TV5 |
+| Giỏ hàng, thanh toán, Doanh thu, Kho dùng tốt ở khổ điện thoại 375 px; cài được như ứng dụng nhờ PWA | TV6 |
 
 ### Điều chưa tốt (cần thay đổi)
 
 | Ý kiến | Người nêu |
 | --- | --- |
-| Đến PR41a mới phát hiện Prisma CLI phải nằm ở dependencies để chạy migrate trong image Docker; nên build image sớm hơn | TV1 |
-| Tài liệu cuối Sprint phụ thuộc nhau: link tới release-notes.md chỉ mở được sau khi PR chứa tệp đó merge nên PR42 phải chờ | TV2 |
-| E2E (PR40) phải chờ PR38 và PR41b nên làm dồn ở cuối Sprint, ít thời gian sửa lỗi | TV3 |
-| Cổng MoMo, VNPay sandbox cần Internet và khóa sandbox không được commit, mỗi người phải tự cấu hình .env nên dễ sai khi chạy lần đầu | TV4 |
-| Các PR frontend nối tiếp nhau (PR34 → PR35 → PR36), PR sau phải chờ PR trước merge nên khó làm song song | TV5 |
-| Các trang nhân viên (PR37 → PR39 → PR45) làm nối tiếp trong đợt 9, việc dồn về cuối Sprint | TV6 |
+| Một số tiêu đề PR vẫn để tên nhánh GitHub tự đặt (#75, #76), lặp lại lỗi của Sprint 1 | TV1 |
+| Ma trận truy vết lúc đầu sửa đè làm mất nội dung đang có trên `main`, phải sửa lại sau review | TV2 |
+| PR hủy đơn phải đóng và mở lại; PR E2E mở khi còn thiếu test màn hình quầy và nhập kho | TV3 |
+| Job migrate của CD từng đỏ vì CSDL Neon gói miễn phí đang ngủ, phải chạy lại; API trên Render ngủ sau 15 phút nên lần mở đầu chậm | TV4 |
+| Chưa review kịp một số PR được giao, PR được merge với Approve của thành viên khác | TV5 |
+| PWA và trang Kho mới kiểm thử thủ công, chưa có test tự động | TV6 |
 
 ### Bài học cho phiên bản sau
 
 | Bài học | Áp dụng thế nào |
 | --- | --- |
-| Kiểm tra build image Docker từ sớm, không để đến cuối Sprint | Chạy `docker compose build` trước khi mở PR có đổi package.json hoặc Dockerfile |
-| Tệp dùng chung (Retrospective, README) dễ bị ghi đè khi chép từ gói PR | Trước khi chép, chạy Update from main và đối chiếu tab Files changed để chỉ thấy phần mình thêm |
-| Số liệu test chỉ lấy từ một nguồn duy nhất | Lấy số lượng từ bảng Kiểm thử trong README, cập nhật cùng lúc khi thêm test |
+| Lỗi tiêu đề và thiếu tệp lặp lại dù đã có hành động cải tiến | Thêm dòng "đã đối chiếu tiêu đề, Files changed" vào mẫu pull request; người review từ chối PR có tiêu đề theo tên nhánh |
+| Người review được giao bận thì PR bị dồn cho người khác | Mỗi hạng mục có thêm một người review dự phòng ngay khi lập Sprint Backlog |
+| Dịch vụ miễn phí (Render, Neon) ngủ khi không dùng | Mở production trước buổi demo vài phút; CD đỏ ở bước migrate vì không kết nối được CSDL thì chạy lại job |
+| Test E2E có muộn, lỗi giao diện chỉ phát hiện khi chạy tay | Viết E2E cho luồng chính ngay từ Sprint đầu, đưa vào check bắt buộc của CI |

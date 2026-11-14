@@ -145,6 +145,57 @@ Mẫu đầy đủ ở [.env.example](.env.example). Trên production các giá 
 
 Lint và build: `npm run lint`, `npm run build` trong `apps/api`, `apps/web` (web có thêm `npm run typecheck`).
 
+## Kiến trúc
+
+![C4 container](docs/architecture/c4-container.svg)
+
+Web (Next.js) gọi API (NestJS) qua REST; API đọc ghi PostgreSQL qua Prisma và mở phiên thanh toán ở cổng MoMo, VNPay. Chi tiết: [architecture.md](docs/architecture/architecture.md), [deployment diagram](docs/architecture/deployment.svg).
+
+## Trạng thái đơn hàng
+
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING: tạo đơn
+    PENDING --> PAID: cổng xác nhận thành công
+    PENDING --> PAYMENT_FAILED: cổng báo thất bại
+    PAYMENT_FAILED --> PENDING: thanh toán lại
+    PENDING --> CANCELLED: hủy / quá 15 phút
+    PAYMENT_FAILED --> CANCELLED: hủy / quá 15 phút
+    PAID --> PREPARING: quầy bắt đầu pha
+    PAID --> CANCELLED: hủy (thu hồi điểm)
+    PREPARING --> READY: báo sẵn sàng
+    READY --> COMPLETED: đã giao nước
+    COMPLETED --> [*]
+    CANCELLED --> [*]
+```
+
+`PAID` và `PAYMENT_FAILED` chỉ do kết quả có chữ ký của cổng quyết định. Hủy đơn trả lại đúng lượng nguyên liệu đã trừ; từ `PREPARING` trở đi không hủy được.
+
+## API chính
+
+| Phương thức | Đường dẫn | Chức năng | Quyền |
+| --- | --- | --- | --- |
+| GET | `/health` | API và CSDL đang chạy | Công khai |
+| POST | `/auth/register`, `/auth/login` | Đăng ký, đăng nhập (trả JWT) | Công khai |
+| GET | `/auth/me` | Thông tin tài khoản | Đăng nhập |
+| GET | `/products`, `/products/:id` | Menu; chi tiết món kèm số ly còn bán theo size, topping | Công khai |
+| GET | `/promotions/:code?subtotal=` | Kiểm tra mã giảm giá | Công khai |
+| POST | `/orders` | Tạo đơn `PENDING`, giá do server tính; header `Idempotency-Key` | Đăng nhập |
+| GET | `/orders/me`, `/orders/:id` | Lịch sử, chi tiết đơn | Đăng nhập |
+| POST | `/orders/:id/cancel` | Khách hủy đơn chưa pha | Đăng nhập |
+| GET | `/orders?status=`, `/orders/counts` | Danh sách đơn cho Quầy | Nhân viên |
+| PATCH | `/orders/:id/status` | Đổi trạng thái đơn | Nhân viên |
+| POST | `/payments` | Mở phiên MoMo/VNPay, trả link sang cổng; bắt buộc `Idempotency-Key` | Đăng nhập |
+| GET | `/payments/:id` | Trạng thái phiên (tự tra cứu cổng khi còn mở) | Đăng nhập |
+| POST | `/payments/:id/return` | Xác nhận kết quả khi cổng chuyển khách về | Đăng nhập |
+| GET | `/payments/:id/receipt` | Biên lai | Chủ đơn hoặc nhân viên |
+| POST | `/payments/momo/ipn` | MoMo báo kết quả | Công khai, kiểm chữ ký |
+| GET | `/payments/vnpay/ipn` | VNPay báo kết quả | Công khai, kiểm chữ ký |
+| GET | `/payments` | Doanh thu, danh sách giao dịch | Nhân viên |
+| GET | `/loyalty/me` | Điểm thưởng và lịch sử điểm | Đăng nhập |
+| GET | `/ingredients` | Tồn kho nguyên liệu, số ly còn bán của từng món | Nhân viên |
+| POST | `/ingredients/:id/restock` | Nhập thêm hàng | Nhân viên |
+
 ## Build, deploy và rollback
 
 - **CI** (`.github/workflows/ci.yml`): mọi pull request vào `main` chạy lint, unit test, integration test, build và E2E. Chỉ merge khi mọi job xanh và có approve.
@@ -152,6 +203,17 @@ Lint và build: `npm run lint`, `npm run build` trong `apps/api`, `apps/web` (we
 - **Rollback:** *Actions → Rollback → Run workflow* với commit SHA của bản ổn định (API); web chọn *Promote to Production* bản cũ trên Vercel.
 
 Chi tiết thiết lập production, secret và các bước rollback: [docs/deployment.md](docs/deployment.md).
+
+## Lỗi thường gặp
+
+| Lỗi | Cách xử lý |
+| --- | --- |
+| Trang production tải lâu ở lần đầu | API gói miễn phí của Render ngủ sau 15 phút không dùng; chờ khoảng 1 phút rồi tải lại |
+| `Can't reach database server` | Mở Docker Desktop, chạy `docker compose up -d db` (chạy từng phần) hoặc `docker compose up -d` |
+| `port is already allocated` | Tắt chương trình đang dùng cổng 3000, 4000 hoặc 5432 rồi chạy lại |
+| Thanh toán báo "Chưa cấu hình VNPay" | Điền `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET` trong `.env` rồi chạy `docker compose up -d` |
+| Chọn MoMo bị lỗi tạo giao dịch (502) | Sandbox MoMo đôi lúc không phản hồi; thử lại sau ít phút hoặc chọn VNPay |
+| Đổi `NEXT_PUBLIC_API_URL` mà web vẫn gọi địa chỉ cũ | Biến được nhúng lúc build: `docker compose up -d --build web` |
 
 ## Tài liệu
 

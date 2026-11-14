@@ -6,7 +6,10 @@
 | [diagrams/](diagrams/) | Activity, sequence, class diagram; sơ đồ luồng dữ liệu | Task 2 |
 | [architecture/](architecture/) | Mô tả kiến trúc (C4 + phân lớp), ADR, deployment diagram, implementation diagram theo vai trò | Task 3 |
 | [traceability-matrix.md](traceability-matrix.md) | Ma trận truy vết yêu cầu → thiết kế → code → test | Task 1–5 |
-| `deployment.md` | Hướng dẫn deploy và rollback (bổ sung ở Sprint 2) | Task 5 |
+| [deployment.md](deployment.md) | Chạy local, thiết lập production, pipeline CI/CD, rollback | Task 5 |
+| [process/](process/) | Definition of Done, chiến lược nhánh, pull request, quy ước commit | Task 4 |
+| [scrum/](scrum/) | Product Backlog, Sprint 1–2, Sprint Review, Sprint Retrospective | Task 4–5 |
+| [release-notes.md](release-notes.md) | Nội dung từng phiên bản phát hành | Task 5 |
 
 ## Quy ước
 

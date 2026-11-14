@@ -10,8 +10,8 @@ Bài tập lớn môn Công nghệ Phần mềm (Assignment 2), Trường Đại
 
 | Thành phần | URL |
 | --- | --- |
-| Web | `<WEB_URL>` |
-| API | `<API_URL>` – health check `<API_URL>/health` |
+| Web | `https://brewlite-web.vercel.app` |
+| API | `https://brewlite-api-wjwg.onrender.com` – health check `https://brewlite-api-wjwg.onrender.com/health` |
 
 Lần truy cập đầu sau khi rảnh 15 phút có thể chờ khoảng 1 phút vì API chạy gói miễn phí của Render (rủi ro R-01).
 

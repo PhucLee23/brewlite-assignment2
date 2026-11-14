@@ -44,9 +44,9 @@ Biên bản họp nhìn lại cuối mỗi Sprint, do Scrum Master (TV1) điều
 
 | Hành động | Kết quả |
 | --- | --- |
-| Tạo Project board và Issue cho từng user story Sprint 2; mô tả pull request ghi Closes #<số issue> (TV2) | [ĐIỀN: Đạt hoặc Chưa đạt, số PR Sprint 2 chưa liên kết Issue] |
-| Trước khi mở PR, đối chiếu tab Files changed với danh sách tệp, đọc lại tiêu đề và mô tả (TV1) | Chưa đạt: ít nhất PR42 (README, Retrospective) bị yêu cầu sửa 6 mục sau khi mở (ghi đè Retrospective Sprint 1, bảng còn trống, số liệu test lệch, README còn `<WEB_URL>`, tiêu đề PR, thứ tự merge). [ĐIỀN: số PR khác phải sửa lại nếu có] |
-| Người review phản hồi trong 24 giờ; chỉ merge khi người review được giao đã Approve; merge xong xóa nhánh (TV1) | [ĐIỀN: Đạt hoặc Chưa đạt, số nhánh đã merge nhưng chưa xóa] |
+| Tạo Project board và Issue cho từng user story Sprint 2; mô tả pull request ghi Closes #<số issue> (TV2) | Chưa đạt: 43 PR đã merge chưa liên kết Issue (tính cả PR Sprint 1 và PR sửa tài liệu) |
+| Trước khi mở PR, đối chiếu tab Files changed với danh sách tệp, đọc lại tiêu đề và mô tả (TV1) | Chưa đạt: PR42 (#99, README và Retrospective) bị yêu cầu sửa 6 mục sau khi mở (ghi đè Retrospective Sprint 1, bảng còn trống, số liệu test lệch, README còn `<WEB_URL>`, tiêu đề PR, thứ tự merge) |
+| Người review phản hồi trong 24 giờ; chỉ merge khi người review được giao đã Approve; merge xong xóa nhánh (TV1) | Chưa đạt: còn 22 nhánh Sprint 2 đã merge chưa xóa (`feat/5-*`, `ci/5-*`, `test/5-e2e`, `docs/5-sprint-review`), cùng các nhánh Task 1 – 4 chưa dọn |
 
 ### Điều làm tốt (giữ lại)
 

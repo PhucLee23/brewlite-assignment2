@@ -85,6 +85,14 @@ API tự áp migration và nạp dữ liệu mẫu khi khởi động. Dừng: `
 
 Nhân viên (`barista@brewlite.vn`) có thêm *Quầy*, *Kho* (nhập thêm nguyên liệu) và *Doanh thu* (giao dịch, biên lai).
 
+| Việc | Lệnh |
+| --- | --- |
+| Xem log API | `docker compose logs -f api` |
+| Tắt, giữ nguyên dữ liệu | `docker compose down` |
+| Bật lại | `docker compose up -d` |
+| Build lại sau khi sửa code | `docker compose up -d --build` |
+| Tắt và xóa luôn dữ liệu | `docker compose down -v` |
+
 ### Chạy từng phần khi phát triển
 
 Cần Node.js 22.
@@ -98,6 +106,32 @@ npm run start:dev                             # API :4000
 cd apps/web && npm ci && npm run dev          # web :3000
 ```
 
+## Biến môi trường
+
+Mẫu đầy đủ ở [.env.example](.env.example). Trên production các giá trị nằm trong GitHub Secrets, Render và Vercel ([docs/deployment.md](docs/deployment.md)).
+
+| Biến | Nơi dùng | Ý nghĩa |
+| --- | --- | --- |
+| `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | db | Tài khoản và tên CSDL của container PostgreSQL |
+| `DATABASE_URL` | API | Chuỗi kết nối PostgreSQL |
+| `PORT` | API | Cổng API, mặc định 4000 |
+| `FRONTEND_URL` | API | Địa chỉ web được phép gọi API (CORS) |
+| `JWT_SECRET`, `JWT_EXPIRES_IN` | API | Khóa ký JWT và thời hạn token |
+| `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET` | API | Mã website và chuỗi bí mật VNPay sandbox (không commit) |
+| `MOMO_PARTNER_CODE`, `MOMO_ACCESS_KEY`, `MOMO_SECRET_KEY` | API | Khóa MoMo; để trống thì dùng bộ khóa test công khai của MoMo |
+| `PUBLIC_API_URL` | API | Địa chỉ công khai của API để cổng gọi IPN |
+| `NEXT_PUBLIC_API_URL` | web | Địa chỉ API; được nhúng lúc build, đổi thì phải build lại web |
+
+## Dữ liệu mẫu
+
+| Loại | Giá trị |
+| --- | --- |
+| Tài khoản khách | `khach@brewlite.vn` / `123456` |
+| Tài khoản nhân viên (STAFF) | `barista@brewlite.vn` / `123456` (có thêm *Quầy*, *Kho*, *Doanh thu*) |
+| Mã giảm giá | `BREW10` (−10%), `WELCOME20` (−20%, đơn từ 100.000đ), `HETHAN` (đã hết hạn), `TAMNGUNG` (đang tạm ngưng) |
+| Món ít hàng | *Cold brew* đủ nguyên liệu cho 5 ly size S, 4 ly M, 3 ly L; *Trà bưởi hồng* đang hết nguyên liệu |
+| Menu | 15 món, công thức nguyên liệu trong [seed.ts](apps/api/prisma/seed.ts) |
+
 ## Kiểm thử
 
 | Loại | Lệnh | Mã test |
@@ -106,6 +140,8 @@ cd apps/web && npm ci && npm run dev          # web :3000
 | Integration test API trên PostgreSQL thật (cổng MoMo, VNPay giả, không gọi Internet) | `cd apps/api && npm run test:int` (cần `docker compose up -d db`) | API-T01 – API-T17 |
 | Component test web | `cd apps/web && npm test` | CT-01 – CT-03 |
 | End-to-end (Playwright, cổng VNPay giả) | `docker compose -f docker-compose.yml -f tests/e2e/docker-compose.e2e.yml up -d --build`, rồi `cd tests/e2e && npm ci && npx playwright install chromium && npm test` | E2E-T01 – E2E-T04 |
+
+**Kết quả gần nhất trên CI:** unit test API 33/33, integration test 73/73, component test 15/15, E2E 5/5.
 
 Lint và build: `npm run lint`, `npm run build` trong `apps/api`, `apps/web` (web có thêm `npm run typecheck`).
 

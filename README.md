@@ -6,16 +6,56 @@ Bài tập lớn môn Công nghệ Phần mềm (Assignment 2), Trường Đại
 - **Quy trình:** yêu cầu → mô hình hóa → kiến trúc → hai Sprint → CI/CD và triển khai; code được hiện thực từ tài liệu thiết kế trong `docs/`.
 - **Phiên bản:** `v1.0.0` – xem [release notes](docs/release-notes.md).
 
+## Chức năng
+
+**Khách hàng**
+- Xem Menu (món hết nguyên liệu hiện *Hết hàng*), xem chi tiết món, chọn size, topping, số lượng trong giới hạn số ly còn bán được.
+- Giỏ hàng lưu trên trình duyệt: sửa số lượng, xóa món, nhập mã giảm giá.
+- Đăng ký, đăng nhập; thanh toán qua MoMo hoặc VNPay sandbox, thanh toán lại khi thất bại, xem và in biên lai.
+- Màn hình xác nhận, lịch sử và chi tiết đơn (tự cập nhật khi quầy xử lý); hủy đơn chưa pha; tích điểm thưởng.
+- Dùng tốt trên điện thoại (khổ 375 px), cài được như ứng dụng (PWA).
+
+**Nhân viên quầy**
+- *Quầy*: đơn đã thanh toán theo nhóm, chuyển Đang pha chế → Sẵn sàng → Hoàn tất, hủy đơn đã thanh toán chưa pha.
+- *Kho*: tồn từng nguyên liệu, số ly còn bán được của từng món, nhập thêm hàng.
+- *Doanh thu*: giao dịch MoMo, VNPay, tiền đã vào, giao dịch cần hoàn tiền, biên lai.
+
+**Hệ thống**
+- Giá luôn do server tính; state machine chặn chuyển trạng thái đơn sai.
+- `Idempotency-Key` chống tạo đơn và mở phiên thanh toán trùng; kết quả cổng báo lặp chỉ xử lý một lần.
+- Trừ nguyên liệu theo công thức bằng optimistic locking: đặt đồng thời không vượt tồn kho.
+- Đơn chưa thanh toán quá 15 phút tự hủy và trả nguyên liệu về kho.
+
+## Công nghệ
+
+| Thành phần | Công nghệ |
+| --- | --- |
+| Web | Next.js 15 (App Router, TypeScript), Tailwind CSS 4, Zustand, TanStack React Query, PWA |
+| API | NestJS 11 (TypeScript), REST, class-validator, JWT, bcrypt |
+| CSDL | PostgreSQL 16 + Prisma 6 (migration, seed) |
+| Thanh toán | MoMo và VNPay, môi trường sandbox (không trừ tiền thật) |
+| Kiểm thử | Jest (unit, integration), Vitest + Testing Library (component), Playwright (E2E) |
+| DevOps | Docker Compose, GitHub Actions (CI/CD), GHCR, Render (API), Vercel (web), Neon (PostgreSQL) |
+
 ## Production
 
 | Thành phần | URL |
 | --- | --- |
-| Web | `https://brewlite-web.vercel.app` |
-| API | `https://brewlite-api-wjwg.onrender.com` – health check `https://brewlite-api-wjwg.onrender.com/health` |
+| Web | https://brewlite-web.vercel.app |
+| API | https://brewlite-api-wjwg.onrender.com – health check [`/health`](https://brewlite-api-wjwg.onrender.com/health) |
 
 Lần truy cập đầu sau khi rảnh 15 phút có thể chờ khoảng 1 phút vì API chạy gói miễn phí của Render (rủi ro R-01).
 
 **Tài khoản mẫu:** `khach@brewlite.vn` / `123456` (khách), `barista@brewlite.vn` / `123456` (nhân viên quầy). **Mã giảm giá:** `BREW10` (10%), `WELCOME20` (20%, đơn từ 100.000đ), `HETHAN` (đã hết hạn).
+
+### Thử nhanh trên production
+
+1. Mở https://brewlite-web.vercel.app trên điện thoại hoặc máy tính, chọn một món ở *Menu*, chọn size, topping rồi *Thêm vào giỏ*.
+2. *Giỏ hàng* → nhập mã `BREW10` → *Thanh toán*; đăng nhập bằng `khach@brewlite.vn` / `123456`.
+3. Chọn VNPay → trên trang của cổng trả bằng thẻ NCB (mục [Thẻ thử](#chạy-ở-máy-cá-nhân)) → quay về BrewLite, đơn sang *Đã thanh toán*, có biên lai.
+4. Mở cửa sổ ẩn danh, đăng nhập `barista@brewlite.vn` / `123456` → *Quầy*: *Bắt đầu pha* → *Báo sẵn sàng* → *Đã giao nước*; trang đơn của khách tự đổi trạng thái.
+5. *Kho*: xem nguyên liệu vừa bị trừ, nhập thêm hàng; *Doanh thu*: giao dịch vừa trả kèm mã giao dịch của cổng.
+6. Thử tồn kho: *Cold brew* chỉ đủ 5 ly size S (4 ly M, 3 ly L); thêm quá số đó thì không đặt được.
 
 ## Chạy ở máy cá nhân
 

@@ -1,0 +1,7 @@
+{
+  "name": "brewlite-a2-postman-tests",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node run-postman-tests.mjs" },
+  "devDependencies": { "newman": "^6.2.1" }
+}

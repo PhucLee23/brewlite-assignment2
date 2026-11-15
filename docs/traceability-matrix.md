@@ -108,6 +108,7 @@ Liên kết mỗi yêu cầu trong [SRS](requirements/srs.md) với use-case, th
 | SMK-01 | Sau deploy: `GET /health` của API production trả 200 |
 | SMK-02 | Sau deploy: trang chủ web production trả 200 |
 | SMK-03 | Sau deploy: `GET /products` của API production đọc được menu |
+| PM-01 | Bộ test Postman `tests/postman/`: mỗi use case có request đúng và các ca lỗi 400, 401, 403, 404, 409; tên request ghi mã FR/NFR |
 
 ## 5. Vị trí mã nguồn và test
 
@@ -127,5 +128,6 @@ Liên kết mỗi yêu cầu trong [SRS](requirements/srs.md) với use-case, th
 | Web: đăng nhập, thanh toán, đơn, quầy, kho, doanh thu | `apps/web/src/app/{login,checkout,payments,orders,staff,admin}/` | `tests/e2e/specs/` (E2E-T01 – T04, cổng VNPay giả `tests/e2e/mock-vnpay`) |
 | PWA | `apps/web/public/manifest.webmanifest`, `sw.js`, `offline.html` | Kiểm thử thủ công trên điện thoại |
 | Triển khai | `apps/*/Dockerfile`, `docker-compose.yml`, `.github/workflows/` | SMK-01 – SMK-03 trong pipeline CD |
+| Kiểm thử API thủ công và tự động bằng Postman | `tests/postman/` | `brewlite-a2.postman_collection.json`, `run-postman-tests.mjs` (PM-01) |
 
 Các mục còn ⏳ là những nội dung chưa được kiểm chứng hoàn tất, sẽ tiếp tục được xác nhận trong các đợt kiểm thử tương ứng.

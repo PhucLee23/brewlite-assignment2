@@ -142,7 +142,7 @@ Mẫu đầy đủ ở [.env.example](.env.example). Trên production các giá 
 | End-to-end (Playwright, cổng VNPay giả) | `docker compose -f docker-compose.yml -f tests/e2e/docker-compose.e2e.yml up -d --build`, rồi `cd tests/e2e && npm ci && npx playwright install chromium && npm test` | E2E-T01 – E2E-T04 |
 | Kiểm thử API bằng Postman theo use case, mã FR (chạy trên hệ thống thật) | `docker compose up -d --build`, rồi `cd tests/postman && npm install && node run-postman-tests.mjs` | Mô tả ở [tests/postman/TESTCASES.md](tests/postman/TESTCASES.md) |
 
-**Kết quả gần nhất trên CI:** unit test API 33/33, integration test 73/73, component test 15/15, E2E 5/5.
+**Kết quả gần nhất trên CI:** unit test API 33/33, integration test 76/76, component test 15/15, E2E 5/5.
 
 **Bộ test Postman:** 102 request, 231 kiểm tra đạt trên máy cá nhân (`docker compose`).
 

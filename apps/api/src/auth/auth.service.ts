@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Prisma, User } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
-import { LoginDto, RegisterDto } from './auth.dto';
+import { LoginDto, PASSWORD_MAX_BYTES, RegisterDto } from './auth.dto';
 
 const BCRYPT_COST = 10; // NFR-03
 const WRONG_CREDENTIALS = 'Email hoặc mật khẩu không đúng';
@@ -39,7 +39,9 @@ export class AuthService {
   // Sai email hay sai mật khẩu đều trả cùng một thông báo để không lộ email nào đã đăng ký (FR-07)
   async login(dto: LoginDto) {
     const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
-    if (!user || !(await bcrypt.compare(dto.password, user.passwordHash))) {
+    // Mật khẩu quá 72 byte không thể là mật khẩu đã đăng ký (bcrypt bỏ phần thừa nên phải chặn trước)
+    const tooLong = Buffer.byteLength(dto.password, 'utf8') > PASSWORD_MAX_BYTES;
+    if (!user || tooLong || !(await bcrypt.compare(dto.password, user.passwordHash))) {
       throw new UnauthorizedException(WRONG_CREDENTIALS);
     }
     return this.session(user);

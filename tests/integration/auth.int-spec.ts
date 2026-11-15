@@ -71,6 +71,30 @@ describe('API-T02 xác thực', () => {
     expect(wrongEmail.body.message).toBe(wrongPassword.body.message);
   });
 
+  it('mật khẩu giới hạn 72 byte vì bcrypt bỏ phần sau: chữ có dấu chiếm 3 byte', async () => {
+    const register = (password: string) =>
+      request(app.getHttpServer())
+        .post('/auth/register')
+        .send({ email: `api-t02-byte-${Date.now()}-${Math.random()}@test.vn`, password, fullName: 'Kiểm tra byte' });
+    // 24 chữ "ệ" đủ 72 byte, thêm 1 ký tự là vượt dù mới 25 ký tự
+    expect((await register('ệ'.repeat(24) + 'A').expect(400)).body.message).toEqual([
+      'Mật khẩu quá dài: chữ có dấu tính 2–3 ký tự, tối đa 72 ký tự không dấu',
+    ]);
+    await register('ệ'.repeat(24)).expect(201);
+    await register('a'.repeat(72)).expect(201);
+  });
+
+  it('đăng nhập bằng mật khẩu dài hơn 72 byte bị từ chối, kể cả khi 72 byte đầu trùng mật khẩu thật', async () => {
+    const byteEmail = `api-t02-dai-${Date.now()}@test.vn`;
+    const password = 'ệ'.repeat(24);
+    await request(app.getHttpServer()).post('/auth/register').send({ email: byteEmail, password, fullName: 'Kiểm tra byte' }).expect(201);
+    await request(app.getHttpServer()).post('/auth/login').send({ email: byteEmail, password }).expect(200);
+    await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: byteEmail, password: password + 'khac' })
+      .expect(401);
+  });
+
   it('GET /auth/me: 401 khi thiếu hoặc sai token, 200 khi token hợp lệ', async () => {
     await request(app.getHttpServer()).get('/auth/me').expect(401);
     await request(app.getHttpServer()).get('/auth/me').set('Authorization', 'Bearer abc.def.ghi').expect(401);

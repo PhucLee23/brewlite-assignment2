@@ -67,6 +67,14 @@ describe('Đặt đơn', () => {
       ).toBe('Mã giảm giá đã hết hạn');
     });
 
+    it('400 (không phải 500) khi productId hoặc toppingIds vượt phạm vi số nguyên của CSDL', async () => {
+      const big = 2147483648;
+      expect((await postOrder(app, token, { items: [{ productId: big, size: 'S', qty: 1 }] }).expect(400)).body.message).toEqual([
+        'productId không hợp lệ',
+      ]);
+      await postOrder(app, token, { items: [{ productId: 1, size: 'S', qty: 1, toppingIds: [big] }] }).expect(400);
+    });
+
     it('size M, L trừ 125%, 150% nguyên liệu; ghi lại lượng đã trừ của đơn', async () => {
       const product = await createProduct(prisma, { stock: 1000, perCup: 200, scalesWithSize: true });
       const res = await postOrder(app, token, {

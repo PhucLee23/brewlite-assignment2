@@ -13,12 +13,14 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
+import { MAX_INT } from '../common/parse-id.pipe';
 import { SIZES, type Size } from '../products/pricing';
 
 // BR-03: mỗi dòng 1–20 ly, tối đa 5 topping; mỗi đơn tối đa 30 dòng. Không nhận giá từ client (BR-02).
 export class OrderItemDto {
   @IsInt({ message: 'productId phải là số nguyên' })
   @Min(1, { message: 'productId không hợp lệ' })
+  @Max(MAX_INT, { message: 'productId không hợp lệ' })
   productId: number;
 
   @IsIn(SIZES, { message: 'Size phải là S, M hoặc L' })
@@ -29,6 +31,7 @@ export class OrderItemDto {
   @ArrayMaxSize(5, { message: 'Mỗi ly tối đa 5 topping' })
   @ArrayUnique({ message: 'Topping bị chọn trùng' })
   @IsInt({ each: true, message: 'toppingIds chỉ gồm số nguyên' })
+  @Max(MAX_INT, { each: true, message: 'toppingIds không hợp lệ' })
   toppingIds: number[] = [];
 
   @IsInt({ message: 'Số lượng phải là số nguyên' })
